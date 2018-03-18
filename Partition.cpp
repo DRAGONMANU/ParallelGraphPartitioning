@@ -24,16 +24,24 @@ void FindMatching(Graph& graph,int id,int chunk_size)
 			// Check whether node is inside the chunk or not
 			if(((get<1>(iter->second))[j]).n2 <= (id+1)*chunk_size && (get<1>(iter->second))[j].n2 > (id)*chunk_size)
 			{
+				Node& predator = get<0>(iter->second);
+				Node& prey = graph.getNode((get<1>(iter->second))[j].n2);
 				if(get<0>(iter->second).matched==0)
 				{		
-					if(graph.getNode((get<1>(iter->second))[j].n2).matched==0)
+					if(prey.matched==0)
 					{
-						graph.getNode((get<1>(iter->second))[j].n2).matched = 1;
-						get<0>(iter->second).matched = 1;
-						matchings.push_back(make_tuple(get<0>(iter->second), graph.getNode((get<1>(iter->second))[j].n2)));
+						prey.matched = 1;
+						predator.matched = 1;
+						matchings.push_back(make_tuple(predator, prey));
+						
 						// Eating and being eaten
-						get<0>(iter->second).food = &graph.getNode((get<1>(iter->second))[j].n2);
-						graph.getNode((get<1>(iter->second))[j].n2).consumer = &get<0>(iter->second);
+						predator.food = &prey;
+						prey.consumer = &predator;
+						predator.weight += prey.weight;
+						
+						// Transfer the adjacency list
+						// Go through the neighbours of prey and add them to adjacency list of predator
+						// If the neighbours are the same, then increment the edge weight
 					}
 				}
 			}
