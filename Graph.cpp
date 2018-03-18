@@ -62,7 +62,6 @@ class Graph
 public:
 	map<int,  tuple<Node,vector <Edge>>> adjacency_list;
 	
-	Graph(){}
 	
 	int NodeExists(int x)
 	{
@@ -71,7 +70,7 @@ public:
 
 	Node& getNode(int x)
 	{
-		Node n = get<0>(adjacency_list[x]);
+		return get<0>(adjacency_list[x]);
 		// for (unsigned int i = 0; i < adjacency_list.size(); i++)
 		// {
 		// 	if (x == get<0>(adjacency_list[i]).getId())
@@ -79,8 +78,6 @@ public:
 		// 		return get<0>(adjacency_list[i]);
 		// 	}
 		// }
-
-		return n;
 	}
 
 	void createAdjacencyList(int x1, vector<Edge> neighbours)
@@ -100,14 +97,17 @@ public:
 	void printGraph() 
 	{
 		printf("Printing Graph\n");
-		for (unsigned int i = 0; i < adjacency_list.size(); i++)
+
+		map<int,  tuple<Node,vector <Edge>>> :: iterator itr = adjacency_list.begin();
+		while(itr != adjacency_list.end())
 		{
-			printf("Node- %d ", get<0>(adjacency_list[i]).getId());
-			for (unsigned int j = 0; j < get<1>(adjacency_list[i]).size(); j++ )
+			printf("Node- %d ", get<0>(itr->second).getId());
+			for (unsigned int j = 0; j < get<1>(itr->second).size(); j++ )
 			{
-				( get<1>(adjacency_list[i])[j] ).printEdge();
+				( get<1>(itr->second)[j] ).printEdge();
 			}
 			printf("\n");
+			itr++;
 		}
 	}
 };
