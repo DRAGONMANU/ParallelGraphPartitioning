@@ -56,7 +56,7 @@ class Graph
 public:
 	vector <tuple<Node,vector <Edge>>> adjacency_list;
 	Graph(){}
-	&Node getNode(int x)
+	Node& getNode(int x)
 	{
 		Node n =(*new Node());
 		for (unsigned int i = 0; i < adjacency_list.size(); i++)

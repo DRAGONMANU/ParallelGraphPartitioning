@@ -12,7 +12,7 @@
 #include "Partition.cpp"
 using namespace std;
 
-extern vector<Graph> Partition(Graph input, int num_edges, int num_threads);
+extern vector<Graph> Partition(Graph& input, int num_edges, int num_threads);
 
 int main() {
 	int num_threads = 1;

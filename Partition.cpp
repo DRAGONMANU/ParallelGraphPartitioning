@@ -6,7 +6,7 @@
 #include <tuple>
 
 using namespace std;;
-vector<Graph> Partition(Graph input, int num_edges, int num_threads);
+vector<Graph> Partition(Graph& input, int num_edges, int num_threads);
 void print_2d_vec(vector<vector<int>> arr, int size);
 void print_vec(vector<int> arr, int size);
 
@@ -14,20 +14,19 @@ void print_vec(vector<int> arr, int size);
 void FindMatching(Graph& graph)
 {
 	vector<tuple<Node,Node>> matchings;
-	for (int i = 0; i < graph.adjacency_list.size; ++i)
+	for (int i = 0; i < graph.adjacency_list.size(); ++i)
 	{
-		int matched = 0;
-		if(get<0>graph.adjacency_list[i].matched==0)
-			for (int j = 0; i < get<1>graph.adjacency_list[i].size(); ++j)
+		if(get<0>(graph.adjacency_list[i]).matched==0)
+			for (int j = 0; j < get<1>(graph.adjacency_list[i]).size(); ++j)
 			{
 				if(graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2).matched==0)
 				{
 					graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2).matched = 1;
-					get<0>graph.adjacency_list[i].matched = 1;
-					matchings.push_back(make_tuple(get<0>graph.adjacency_list[i],graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2)));
+					get<0>(graph.adjacency_list[i]).matched = 1;
+					matchings.push_back(make_tuple(get<0>(graph.adjacency_list[i]),graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2)));
 					break;
 				}
-			} 	
+			}
 	}
 }
 
@@ -58,8 +57,12 @@ vector<Graph> Partition(Graph& input, int num_edges, int num_threads)
 			}
 		}
 
-		FindMatching(breaks[id]);
-	}
+		// while(breaks[i].size()>10)
+		// {
+		// 	FindMatching(breaks[id]);
+		// 	EatMatches(breaks[id]);
+		// }
+}
 
 
 	vector<Graph> parts;
