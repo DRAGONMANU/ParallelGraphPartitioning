@@ -12,7 +12,7 @@
 #include "Partition.cpp"
 using namespace std;
 
-extern void Partition(Graph input, int num_edges, int num_threads);
+extern vector<Graph> Partition(Graph input, int num_edges, int num_threads);
 
 int main() {
 	int num_threads = 1;
@@ -36,13 +36,11 @@ int main() {
 	if (myfile.is_open())
 	{
 		
-		for(int input_ind = 0; input_ind < num_nodes; input_ind++)
+		for(int input_ind = 0; input_ind <= num_nodes; input_ind++)
 		{
 			getline(myfile, line);
 			istringstream is(line);
 			vector<int> v((istream_iterator<int>(is)), istream_iterator<int>());
-			// input[input_ind] = v;
-			// printf("-- = %d\n", input[input_ind].size());
 			for (int x : v) std::cout << x << ' ';
 			std::cout << std::endl;
 			std::vector<Edge> ve;
@@ -50,7 +48,8 @@ int main() {
 			{
 				ve.push_back( *(new Edge(v[i], 1)));
 			}
-			input_graph.createAdjacencyList(input_ind, ve);
+			if(input_ind!=0)
+				input_graph.createAdjacencyList(input_ind, ve);
 		}
 		myfile.close();
 	}
@@ -63,11 +62,11 @@ int main() {
 
 	double start_time = omp_get_wtime();
 	// printf("input size = %d\n", input.size());
-	Partition(input_graph, num_edges, num_threads);
+	vector<Graph> parts = Partition(input_graph, num_edges, num_threads);
 	double time_taken = omp_get_wtime() - start_time;
 
 	// Printing stats and results
-	cout << time_taken << endl;
+	cout << "\nTime taken = " << time_taken << endl;
 
 	return 0;
 }

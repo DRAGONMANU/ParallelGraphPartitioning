@@ -6,11 +6,11 @@
 #include <tuple>
 
 using namespace std;;
-void Partition(Graph input, int num_edges, int num_threads);
+vector<Graph> Partition(Graph input, int num_edges, int num_threads);
 void print_2d_vec(vector<vector<int>> arr, int size);
 void print_vec(vector<int> arr, int size);
 
-void Partition(Graph input, int num_edges, int num_threads)
+vector<Graph> Partition(Graph input, int num_edges, int num_threads)
 {
 	vector<Graph> breaks;
 	for (int i = 0; i < num_threads; ++i)
@@ -29,14 +29,22 @@ void Partition(Graph input, int num_edges, int num_threads)
 		}
 		if(id == num_threads-1)
 		{
-			for (int i = (id+1)*chunk_size; i < input.size(); ++i)
+			for (int i = (id+1)*chunk_size; i < input.adjacency_list.size(); ++i)
 			{
 				//TODO change this function
 				breaks[id].createAdjacencyList(i,get<1>(input.adjacency_list[i]));
 			}
 		}
+
+		// FindMatching(breaks[id]);
 	}
 
+
+	vector<Graph> parts;
+	// Graph coarse_graph = Union(breaks);
+	// vector<Graph> parts = Bipartition(coarse_graph);
+	// Project(parts,input.adjacency_list.size()); // vomit recursive till rhs is 0
+	return parts;
 
 }
 
@@ -44,7 +52,7 @@ void print_vec(vector<int> arr, int size)
 {
 	printf("size = %d\n", size);
 	printf("\n[ ");
-	for (int i = 0; i < size - 1; i++)
+	for (int i = 0; i < size; i++)
 		printf("%d (%d) , ", arr[i], i);
 	printf("%d (%d)]\n", arr[size - 1], (size - 1));
 }
