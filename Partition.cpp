@@ -10,7 +10,29 @@ vector<Graph> Partition(Graph input, int num_edges, int num_threads);
 void print_2d_vec(vector<vector<int>> arr, int size);
 void print_vec(vector<int> arr, int size);
 
-vector<Graph> Partition(Graph input, int num_edges, int num_threads)
+
+void FindMatching(Graph& graph)
+{
+	vector<tuple<Node,Node>> matchings;
+	for (int i = 0; i < graph.adjacency_list.size; ++i)
+	{
+		int matched = 0;
+		if(get<0>graph.adjacency_list[i].matched==0)
+			for (int j = 0; i < get<1>graph.adjacency_list[i].size(); ++j)
+			{
+				if(graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2).matched==0)
+				{
+					graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2).matched = 1;
+					get<0>graph.adjacency_list[i].matched = 1;
+					matchings.push_back(make_tuple(get<0>graph.adjacency_list[i],graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2)));
+					break;
+				}
+			} 	
+	}
+}
+
+
+vector<Graph> Partition(Graph& input, int num_edges, int num_threads)
 {
 	vector<Graph> breaks;
 	for (int i = 0; i < num_threads; ++i)
@@ -21,7 +43,7 @@ vector<Graph> Partition(Graph input, int num_edges, int num_threads)
 #pragma omp parallel num_threads(num_threads)
 	{
 		int id = omp_get_thread_num();
-		int chunk_size = input.node_list.size()/num_threads;
+		int chunk_size = input.adjacency_list.size()/num_threads;
 		for(int i=id*chunk_size;i<(id+1)*chunk_size;i++)
 		{
 			//TODO change this function
@@ -36,7 +58,7 @@ vector<Graph> Partition(Graph input, int num_edges, int num_threads)
 			}
 		}
 
-		// FindMatching(breaks[id]);
+		FindMatching(breaks[id]);
 	}
 
 

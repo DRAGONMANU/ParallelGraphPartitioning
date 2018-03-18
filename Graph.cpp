@@ -17,9 +17,11 @@ class Node
 	public:	
 	int id;
 	int weight;
+	int matched;
 	struct Node* eaten;
 	Node(){
 		id = -1;
+		matched = 0;
 	}
 	Node(int id1) {
 		id = id1;
@@ -52,17 +54,16 @@ public:
 class Graph
 {
 public:
-	vector<Node> node_list;
 	vector <tuple<Node,vector <Edge>>> adjacency_list;
 	Graph(){}
-	Node getNode(int x)
+	&Node getNode(int x)
 	{
 		Node n =(*new Node());
-		for (unsigned int i = 0; i < node_list.size(); i++)
+		for (unsigned int i = 0; i < adjacency_list.size(); i++)
 		{
-			if (x == node_list[i].getId())
+			if (x == get<0>(adjacency_list[i]).getId())
 			{
-				return node_list[i];
+				return get<0>(adjacency_list[i]);
 			}
 		}
 		return n;
@@ -71,13 +72,7 @@ public:
 	void createAdjacencyList(int x1, vector<Edge> neighbours)
 	{
 		Node n1 = getNode(x1);
-		
 		adjacency_list.push_back( make_tuple(n1, neighbours));
-	}
-
-	void addNode(Node a)
-	{
-		node_list.push_back(a);
 	}
 };
 
