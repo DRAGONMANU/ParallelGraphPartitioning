@@ -9,6 +9,7 @@
 #include <omp.h>
 #include <iterator>
 #include <tuple>
+#include <map>
 
 using namespace std;
 
@@ -59,37 +60,32 @@ class Node
 class Graph
 {
 public:
-	vector <tuple<Node,vector <Edge>>> adjacency_list;
+	map<int,  tuple<Node,vector <Edge>>> adjacency_list;
+	
 	Graph(){}
 	
 	int NodeExists(int x)
 	{
-		for (unsigned int i = 0; i < adjacency_list.size(); i++)
-		{
-			if (x == get<0>(adjacency_list[i]).getId())
-			{
-				return 1;
-			}
-		}
-		return 0;
+		return (adjacency_list.find(x) != adjacency_list.end());
 	}
 
 	Node& getNode(int x)
 	{
-		Node n =(*new Node());
-		for (unsigned int i = 0; i < adjacency_list.size(); i++)
-		{
-			if (x == get<0>(adjacency_list[i]).getId())
-			{
-				return get<0>(adjacency_list[i]);
-			}
-		}
+		Node n = get<0>(adjacency_list[x]);
+		// for (unsigned int i = 0; i < adjacency_list.size(); i++)
+		// {
+		// 	if (x == get<0>(adjacency_list[i]).getId())
+		// 	{
+		// 		return get<0>(adjacency_list[i]);
+		// 	}
+		// }
+
 		return n;
 	}
 
 	void createAdjacencyList(int x1, vector<Edge> neighbours)
 	{
-		Node n1;
+		Node n1; 
 		if (NodeExists(x1) != 0)
 		{
 		 	n1 = getNode(x1);
@@ -98,7 +94,7 @@ public:
 		{
 			n1 = *(new Node(x1));
 		}
-		adjacency_list.push_back( make_tuple(n1, neighbours));
+		adjacency_list.insert( pair < int, tuple<Node,vector <Edge>> > (n1.getId(),  make_tuple(n1, neighbours)) );
 	}
 
 	void printGraph() 
@@ -116,10 +112,3 @@ public:
 	}
 };
 
-// void printGraph(Graph g) {
-// 	printf("Printing Graph\n");
-// 	for (int i = 0; i < g.edge_list.size(); i++)
-// 	{
-// 		printf("%d %d\n", get<0>(g.edge_list[i]).id, get<1>(g.edge_list[i]).id);
-// 	}
-// }
