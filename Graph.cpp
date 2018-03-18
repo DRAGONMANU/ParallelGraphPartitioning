@@ -36,8 +36,8 @@ class Node
 	int id;
 	int weight;
 	int matched;
-	Node& food;
-	Node& consumer;
+	Node *food;
+	Node *consumer;
 	vector<Edge> external_edges;
 	Node(){
 		id = -1;
@@ -48,10 +48,11 @@ class Node
 		weight = 1;
 		matched = 0;
 	}
-	void addEaten(Node* food)
+	void Eat(Node *prey)
 	{	
 		weight += food->weight;
-		eaten = food;
+		food = prey;
+		prey->consumer = this;
 	}
 	int getId()
 	{
@@ -97,6 +98,16 @@ public:
 		while(itr != adjacency_list.end())
 		{
 			printf("Node- %d ", get<0>(itr->second).getId());
+			if (get<0>(itr->second).food != 0) // Food Exists
+			{
+				printf("(F - %d)", get<0>(itr->second).food->id);
+			}
+
+			if (get<0>(itr->second).consumer != 0) // Consumer Exists
+			{
+				printf(" (C - %d)", get<0>(itr->second).consumer->id);
+			}
+			printf("\t");
 			for (unsigned int j = 0; j < get<1>(itr->second).size(); j++ )
 			{
 				( get<1>(itr->second)[j] ).printEdge();

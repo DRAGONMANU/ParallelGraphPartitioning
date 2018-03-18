@@ -18,7 +18,7 @@ void FindMatching(Graph& graph,int id,int chunk_size)
 	
 	while(iter != graph.adjacency_list.end())
 	{
-		for (int j = 0; j < get<1>(iter->second).size(); ++j)
+		for (unsigned int j = 0; j < get<1>(iter->second).size(); ++j)
 		{
 			// cout<<((get<1>(iter->second))[j]).n2;
 			// Check whether node is inside the chunk or not
@@ -30,7 +30,9 @@ void FindMatching(Graph& graph,int id,int chunk_size)
 					{
 						graph.getNode((get<1>(iter->second))[j].n2).matched = 1;
 						get<0>(iter->second).matched = 1;
-						matchings.push_back(make_tuple(get<0>(iter->second),graph.getNode((get<1>(iter->second))[j].n2)));
+						matchings.push_back(make_tuple(get<0>(iter->second), graph.getNode((get<1>(iter->second))[j].n2)));
+						get<0>(iter->second).food = &graph.getNode((get<1>(iter->second))[j].n2);
+						graph.getNode((get<1>(iter->second))[j].n2).consumer = &get<0>(iter->second);
 					}
 				}
 			}
@@ -50,9 +52,10 @@ void FindMatching(Graph& graph,int id,int chunk_size)
 	//eating 
 	for (unsigned int i = 0; i < matchings.size(); ++i)
 	{
-		get<0>(matchings[i]).food = get<1>(matchings[i]);
-		printf("%d - %d\n", get<0>(matchings[i]).id,get<1>(matchings[i]).id);
+		get<0>(matchings[i]).food = (&get<1>(matchings[i]));
+		get<1>(matchings[i]).consumer = (&get<0>(matchings[i]));
 	}
+	graph.printGraph();
 }
 
 
@@ -78,7 +81,7 @@ vector<Graph> Partition(Graph& input, int num_edges, int num_threads)
 		}
 		else
 		{
-			for (int i = id*chunk_size; i < input.adjacency_list.size(); ++i)
+			for (unsigned int i = id*chunk_size; i < input.adjacency_list.size(); ++i)
 			{
 				//TODO change this function
 				breaks[id].createAdjacencyList(i+1,get<1>(input.adjacency_list[i+1]));
