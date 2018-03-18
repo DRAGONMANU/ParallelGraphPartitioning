@@ -11,23 +11,31 @@ void print_2d_vec(vector<vector<int>> arr, int size);
 void print_vec(vector<int> arr, int size);
 
 
-void FindMatching(Graph& graph)
+void FindMatching(Graph& graph,int id,int chunk_size)
 {
 	vector<tuple<Node,Node>> matchings;
 	for (int i = 0; i < graph.adjacency_list.size(); ++i)
 	{
-		if(get<0>(graph.adjacency_list[i]).matched==0)
-			for (int j = 0; j < get<1>(graph.adjacency_list[i]).size(); ++j)
+		for (int j = 0; j < get<1>(graph.adjacency_list[i]).size(); ++j)
+		{
+			if(graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2).id < (id+1)*chunk_size && graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2).id >= (id)*chunk_size)
 			{
-				if(graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2).matched==0)
-				{
-					graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2).matched = 1;
-					get<0>(graph.adjacency_list[i]).matched = 1;
-					matchings.push_back(make_tuple(get<0>(graph.adjacency_list[i]),graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2)));
-					break;
-				}
+				if(get<0>(graph.adjacency_list[i]).matched==0)
+					if(graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2).matched==0)
+					{
+						graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2).matched = 1;
+						get<0>(graph.adjacency_list[i]).matched = 1;
+						matchings.push_back(make_tuple(get<0>(graph.adjacency_list[i]),graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2)));
+					}
 			}
+			else
+				get<0>(graph.adjacency_list[i]).external_edges.push_back(*new Edge((get<1>(graph.adjacency_list[i]))[j].n2),1);
+			
+		}
 	}
+
+	//eating
+
 }
 
 
@@ -57,11 +65,10 @@ vector<Graph> Partition(Graph& input, int num_edges, int num_threads)
 			}
 		}
 
-		// while(breaks[i].size()>10)
-		// {
-		// 	FindMatching(breaks[id]);
-		// 	EatMatches(breaks[id]);
-		// }
+		while(breaks[id].size()>10)
+		{
+			FindMatching(breaks[id],id,chunk_size);
+		}
 }
 
 
