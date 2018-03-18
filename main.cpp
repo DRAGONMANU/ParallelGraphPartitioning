@@ -64,7 +64,6 @@ int main() {
 	// printf("input size = %d\n", input.size());
 	vector<Graph> parts = Partition(input_graph, num_edges, num_threads);
 	double time_taken = omp_get_wtime() - start_time;
-	input_graph.printGraph();
 	// Printing stats and results
 	cout << "\nTime taken = " << time_taken << endl;
 

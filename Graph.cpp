@@ -36,7 +36,8 @@ class Node
 	int id;
 	int weight;
 	int matched;
-	Node* eaten;
+	Node& food;
+	Node& consumer;
 	vector<Edge> external_edges;
 	Node(){
 		id = -1;
@@ -45,6 +46,7 @@ class Node
 	Node(int id1) {
 		id = id1;
 		weight = 1;
+		matched = 0;
 	}
 	void addEaten(Node* food)
 	{	

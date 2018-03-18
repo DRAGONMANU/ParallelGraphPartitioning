@@ -10,47 +10,54 @@ vector<Graph> Partition(Graph& input, int num_edges, int num_threads);
 void print_2d_vec(vector<vector<int>> arr, int size);
 void print_vec(vector<int> arr, int size);
 
-
+// Finds the internal matching and the external edges
 void FindMatching(Graph& graph,int id,int chunk_size)
 {
-	graph.printGraph();
 	vector<tuple<Node,Node>> matchings;
-	for (int i = 0; i < graph.adjacency_list.size(); ++i)
+	map<int,  tuple<Node,vector <Edge>>> :: iterator iter = graph.adjacency_list.begin();
+	
+	while(iter != graph.adjacency_list.end())
 	{
-		for (int j = 0; j < get<1>(graph.adjacency_list[i]).size(); ++j)
+		for (int j = 0; j < get<1>(iter->second).size(); ++j)
 		{
-			//cout<<((get<1>(graph.adjacency_list[i]))[j]).n2;
-			if(((get<1>(graph.adjacency_list[i]))[j]).n2 < (id+1)*chunk_size && (get<1>(graph.adjacency_list[i]))[j].n2 >= (id)*chunk_size)
+			// cout<<((get<1>(iter->second))[j]).n2;
+			// Check whether node is inside the chunk or not
+			if(((get<1>(iter->second))[j]).n2 <= (id+1)*chunk_size && (get<1>(iter->second))[j].n2 > (id)*chunk_size)
 			{
-				if(get<0>(graph.adjacency_list[i]).matched==0)
-					if(graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2).matched==0)
+				if(get<0>(iter->second).matched==0)
+				{		
+					if(graph.getNode((get<1>(iter->second))[j].n2).matched==0)
 					{
-						graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2).matched = 1;
-						get<0>(graph.adjacency_list[i]).matched = 1;
-						matchings.push_back(make_tuple(get<0>(graph.adjacency_list[i]),graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2)));
+						graph.getNode((get<1>(iter->second))[j].n2).matched = 1;
+						get<0>(iter->second).matched = 1;
+						matchings.push_back(make_tuple(get<0>(iter->second),graph.getNode((get<1>(iter->second))[j].n2)));
 					}
+				}
 			}
 			else
-				get<0>(graph.adjacency_list[i]).external_edges.push_back(*new Edge((get<1>(graph.adjacency_list[i]))[j].n2,1));
-			
+			{
+				get<0>(iter->second).external_edges.push_back(*new Edge((get<1>(iter->second))[j].n2,1));
+				printf("ext %d - %d\n", get<0>(iter->second).id, get<1>(iter->second)[j].n2);
+			}
 		}
+		iter++;
 	}
-	//eating
 	printf("matches\n");
-	for (int i = 0; i < matchings.size(); ++i)
+	for (unsigned int i = 0; i < matchings.size(); ++i)
 	{
-		graph.getNode(get<0>(matchings[i]).id).eaten = graph.getNode(get<1>(matchings[i]).id);
-		
+		printf("%d - %d\n", get<0>(matchings[i]).id,get<1>(matchings[i]).id);
 	}
-
-
-
+	//eating 
+	for (unsigned int i = 0; i < matchings.size(); ++i)
+	{
+		get<0>(matchings[i]).food = get<1>(matchings[i]);
+		printf("%d - %d\n", get<0>(matchings[i]).id,get<1>(matchings[i]).id);
+	}
 }
 
 
 vector<Graph> Partition(Graph& input, int num_edges, int num_threads)
 {
-
 	vector<Graph> breaks;
 	for (int i = 0; i < num_threads; ++i)
 	{
