@@ -71,16 +71,7 @@ public:
 
 	Node& getNode(int x)
 	{
-		Node n = get<0>(adjacency_list[x]);
-		// for (unsigned int i = 0; i < adjacency_list.size(); i++)
-		// {
-		// 	if (x == get<0>(adjacency_list[i]).getId())
-		// 	{
-		// 		return get<0>(adjacency_list[i]);
-		// 	}
-		// }
-
-		return n;
+		return get<0>(adjacency_list[x]);
 	}
 
 	void createAdjacencyList(int x1, vector<Edge> neighbours)

@@ -13,12 +13,14 @@ void print_vec(vector<int> arr, int size);
 
 void FindMatching(Graph& graph,int id,int chunk_size)
 {
+	graph.printGraph();
 	vector<tuple<Node,Node>> matchings;
 	for (int i = 0; i < graph.adjacency_list.size(); ++i)
 	{
 		for (int j = 0; j < get<1>(graph.adjacency_list[i]).size(); ++j)
 		{
-			if(graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2).id < (id+1)*chunk_size && graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2).id >= (id)*chunk_size)
+			//cout<<((get<1>(graph.adjacency_list[i]))[j]).n2;
+			if(((get<1>(graph.adjacency_list[i]))[j]).n2 < (id+1)*chunk_size && (get<1>(graph.adjacency_list[i]))[j].n2 >= (id)*chunk_size)
 			{
 				if(get<0>(graph.adjacency_list[i]).matched==0)
 					if(graph.getNode((get<1>(graph.adjacency_list[i]))[j].n2).matched==0)
@@ -29,18 +31,26 @@ void FindMatching(Graph& graph,int id,int chunk_size)
 					}
 			}
 			else
-				get<0>(graph.adjacency_list[i]).external_edges.push_back(*new Edge((get<1>(graph.adjacency_list[i]))[j].n2),1);
+				get<0>(graph.adjacency_list[i]).external_edges.push_back(*new Edge((get<1>(graph.adjacency_list[i]))[j].n2,1));
 			
 		}
 	}
-
 	//eating
+	printf("matches\n");
+	for (int i = 0; i < matchings.size(); ++i)
+	{
+		graph.getNode(get<0>(matchings[i]).id).eaten = graph.getNode(get<1>(matchings[i]).id);
+		
+	}
+
+
 
 }
 
 
 vector<Graph> Partition(Graph& input, int num_edges, int num_threads)
 {
+
 	vector<Graph> breaks;
 	for (int i = 0; i < num_threads; ++i)
 	{
@@ -51,25 +61,28 @@ vector<Graph> Partition(Graph& input, int num_edges, int num_threads)
 	{
 		int id = omp_get_thread_num();
 		int chunk_size = input.adjacency_list.size()/num_threads;
-		for(int i=id*chunk_size;i<(id+1)*chunk_size;i++)
-		{
-			//TODO change this function
-			breaks[id].createAdjacencyList(i,get<1>(input.adjacency_list[i]));
-		}
-		if(id == num_threads-1)
-		{
-			for (int i = (id+1)*chunk_size; i < input.adjacency_list.size(); ++i)
+		if(id < num_threads-1)
+		{ 
+			for(int i=id*chunk_size;i<(id+1)*chunk_size;i++)
 			{
 				//TODO change this function
-				breaks[id].createAdjacencyList(i,get<1>(input.adjacency_list[i]));
+				breaks[id].createAdjacencyList(i+1,get<1>(input.adjacency_list[i+1]));
 			}
 		}
-
-		while(breaks[id].size()>10)
+		else
 		{
-			FindMatching(breaks[id],id,chunk_size);
+			for (int i = id*chunk_size; i < input.adjacency_list.size(); ++i)
+			{
+				//TODO change this function
+				breaks[id].createAdjacencyList(i+1,get<1>(input.adjacency_list[i+1]));
+
+			}
 		}
-}
+		//while(breaks[id].size()>10)
+		{
+		 	FindMatching(breaks[id],id,chunk_size);
+		}
+	}
 
 
 	vector<Graph> parts;
