@@ -31,6 +31,7 @@ void FindMatching(Graph& graph,int id,int chunk_size)
 						graph.getNode((get<1>(iter->second))[j].n2).matched = 1;
 						get<0>(iter->second).matched = 1;
 						matchings.push_back(make_tuple(get<0>(iter->second), graph.getNode((get<1>(iter->second))[j].n2)));
+						// Eating and being eaten
 						get<0>(iter->second).food = &graph.getNode((get<1>(iter->second))[j].n2);
 						graph.getNode((get<1>(iter->second))[j].n2).consumer = &get<0>(iter->second);
 					}
@@ -50,11 +51,11 @@ void FindMatching(Graph& graph,int id,int chunk_size)
 		printf("%d - %d\n", get<0>(matchings[i]).id,get<1>(matchings[i]).id);
 	}
 	//eating 
-	for (unsigned int i = 0; i < matchings.size(); ++i)
-	{
-		get<0>(matchings[i]).food = (&get<1>(matchings[i]));
-		get<1>(matchings[i]).consumer = (&get<0>(matchings[i]));
-	}
+	// for (unsigned int i = 0; i < matchings.size(); ++i)
+	// {
+	// 	get<0>(matchings[i]).food = (&get<1>(matchings[i]));
+	// 	get<1>(matchings[i]).consumer = (&get<0>(matchings[i]));
+	// }
 	graph.printGraph();
 }
 
