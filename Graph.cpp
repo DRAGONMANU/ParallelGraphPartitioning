@@ -50,16 +50,25 @@ class Node
 		matched = 0;
 	}
 
+	int preyExists(int level_coarsening)
+	{
+		return food_chain.find(level_coarsening) != food_chain.end();
+	}
+
 	int predatorExists()
 	{
-		return consumer;
+		if (consumer == 0)
+		{
+			return 0;
+		}	
+		return 1;
 	}
-	void Eat(Node *prey)
-	{	
-		weight += food->weight;
-		food = prey;
-		prey->consumer = this;
-	}
+	// void Eat(Node *prey)
+	// {	
+	// 	weight += food->weight;
+	// 	food = prey;
+	// 	prey->consumer = this;
+	// }
 	int getId()
 	{
 		return id;
@@ -107,10 +116,25 @@ public:
 		adjacency_list.insert( pair < int, tuple<Node,vector <Edge>> > (n1.getId(),  make_tuple(n1, neighbours)) );
 	}
 
+	Edge modifyEdgeWithParent(Edge e)
+	{
+		int node2_id = e.n2;
+		Node& node2 = getNode(node2_id);
+		if(node2.predatorExists() > 0)
+		{
+			e.n2 = (node2.consumer)->id;
+		}
+		return e;
+	}
 	void insertEdge(int node_id, Edge new_e)
 	{
 		if(NodeExists(node_id))
 		{
+			// Don't insert itsef into the neighbour list
+			if (node_id == new_e.n2)
+			{
+				return;
+			}
 			vector<Edge>& neighbour_list = getEdges(node_id);
 			vector <Edge> :: iterator e_itr = neighbour_list.begin();
 			while(e_itr != neighbour_list.end())
@@ -133,16 +157,16 @@ public:
 		map<int,  tuple<Node,vector <Edge>>> :: iterator itr = adjacency_list.begin();
 		while(itr != adjacency_list.end())
 		{
-			printf("Node- %d ", get<0>(itr->second).getId());
-			if (get<0>(itr->second).food != 0) // Food Exists
-			{
-				printf("(F - %d)", get<0>(itr->second).food->id);
-			}
+			printf("Node- %d (%d)", get<0>(itr->second).getId(), get<0>(itr->second).weight);
+			// if (get<0>(itr->second).food != 0) // Food Exists
+			// {
+			// 	printf("(F - %d)", get<0>(itr->second).food->id);
+			// }
 
-			if (get<0>(itr->second).consumer != 0) // Consumer Exists
-			{
-				printf(" (C - %d)", get<0>(itr->second).consumer->id);
-			}
+			// if (get<0>(itr->second).consumer != 0) // Consumer Exists
+			// {
+			// 	printf(" (C - %d)", get<0>(itr->second).consumer->id);
+			// }
 			printf("\t");
 			for (unsigned int j = 0; j < get<1>(itr->second).size(); j++ )
 			{

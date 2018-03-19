@@ -10,8 +10,49 @@ vector<Graph> Partition(Graph& input, int num_edges, int num_threads);
 void print_2d_vec(vector<vector<int>> arr, int size);
 void print_vec(vector<int> arr, int size);
 
+
+Graph updateEdges(Graph& graph, int level_coarsening)
+{
+	Graph new_graph = *(new Graph());
+	printf("in updateEdges - level = %d\n", level_coarsening);
+	map<int,  tuple<Node,vector <Edge>>> :: iterator iter = graph.adjacency_list.begin();
+	while(iter != graph.adjacency_list.end())
+	{
+		Node& old_n = get<0>(iter->second);
+		if(old_n.consumer != 0) // If consumed then don't add the node to the new graph
+		{
+			iter++;
+			continue;
+		}
+		Node new_n = *(new Node(old_n.id));
+		new_n.weight = old_n.weight;
+		vector<Edge> new_neighbours;
+		new_graph.createAdjacencyList2(new_n, new_neighbours);
+
+		// inserting the edges of the original node
+		for (unsigned int j = 0; j < get<1>(iter->second).size(); ++j)
+		{
+			new_graph.insertEdge(old_n.id, graph.modifyEdgeWithParent(get<1>(iter->second)[j]));
+		}
+
+		printf("old_n id = %d\n", old_n.id);
+		if (old_n.preyExists(level_coarsening))
+		{
+			int prey_id = old_n.food_chain[level_coarsening]->id;
+			//inserting the edges of the prey
+			vector<Edge> prey_edges = get<1>(graph.adjacency_list[prey_id]);
+			for (unsigned int j = 0; j < prey_edges.size(); ++j)
+			{
+				new_graph.insertEdge(old_n.id, graph.modifyEdgeWithParent(prey_edges[j]));
+			}
+		}
+		iter++;
+	}
+	return new_graph;
+
+}
 // Finds the internal matching and the external edges
-void FindMatching(Graph& graph,int id,int chunk_size)
+Graph FindMatching(Graph& graph,int id,int chunk_size, int level_coarsening)
 {
 	vector<tuple<Node,Node>> matchings;
 	map<int,  tuple<Node,vector <Edge>>> :: iterator iter = graph.adjacency_list.begin();
@@ -35,7 +76,9 @@ void FindMatching(Graph& graph,int id,int chunk_size)
 						matchings.push_back(make_tuple(predator, prey));
 						
 						// Eating and being eaten
-						predator.food = &prey;
+						// TODO: Store the prey for each level using map
+						// map< int , map
+						predator.food_chain.insert(pair <int, Node*> (level_coarsening, &prey));
 						prey.consumer = &predator;
 						predator.weight += prey.weight;
 						
@@ -64,7 +107,9 @@ void FindMatching(Graph& graph,int id,int chunk_size)
 	// 	get<0>(matchings[i]).food = (&get<1>(matchings[i]));
 	// 	get<1>(matchings[i]).consumer = (&get<0>(matchings[i]));
 	// }
-	graph.printGraph();
+	Graph new_graph = updateEdges(graph, level_coarsening);
+	new_graph.printGraph();
+	return new_graph;
 }
 
 
@@ -99,7 +144,10 @@ vector<Graph> Partition(Graph& input, int num_edges, int num_threads)
 		}
 		//while(breaks[id].size()>10)
 		{
-		 	FindMatching(breaks[id],id,chunk_size);
+		 	Graph g1 = FindMatching(breaks[id], id, chunk_size, 0);
+		 	Graph g2 = FindMatching(g1, id, chunk_size, 1);
+		 	Graph g3 = FindMatching(g2, id, chunk_size, 2);
+
 		}
 	}
 
