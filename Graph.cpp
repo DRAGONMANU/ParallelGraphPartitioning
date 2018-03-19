@@ -36,8 +36,9 @@ class Node
 	int id;
 	int weight;
 	int matched;
-	Node *food;
-	Node *consumer;
+	map<int, Node*> food_chain;
+	Node* consumer;
+	vector<Edge> neighbours;
 	vector<Edge> external_edges;
 	Node(){
 		id = -1;
@@ -47,6 +48,11 @@ class Node
 		id = id1;
 		weight = 1;
 		matched = 0;
+	}
+
+	int predatorExists()
+	{
+		return consumer;
 	}
 	void Eat(Node *prey)
 	{	
@@ -63,7 +69,7 @@ class Node
 class Graph
 {
 public:
-	map<int,  tuple<Node,vector <Edge>>> adjacency_list;
+	map<int, tuple<Node,vector <Edge>>> adjacency_list;
 	
 	
 	int NodeExists(int x)
@@ -76,6 +82,10 @@ public:
 		return get<0>(adjacency_list[x]);
 	}
 
+	vector<Edge>& getEdges(int node_id)
+	{
+		return get<1>(adjacency_list[node_id]);
+	}
 	void createAdjacencyList(int x1, vector<Edge> neighbours)
 	{
 		Node n1; 
@@ -87,7 +97,33 @@ public:
 		{
 			n1 = *(new Node(x1));
 		}
+		n1.neighbours = neighbours;
 		adjacency_list.insert( pair < int, tuple<Node,vector <Edge>> > (n1.getId(),  make_tuple(n1, neighbours)) );
+	}
+
+	void createAdjacencyList2(Node& n1, vector<Edge> neighbours)
+	{
+		n1.neighbours = neighbours;
+		adjacency_list.insert( pair < int, tuple<Node,vector <Edge>> > (n1.getId(),  make_tuple(n1, neighbours)) );
+	}
+
+	void insertEdge(int node_id, Edge new_e)
+	{
+		if(NodeExists(node_id))
+		{
+			vector<Edge>& neighbour_list = getEdges(node_id);
+			vector <Edge> :: iterator e_itr = neighbour_list.begin();
+			while(e_itr != neighbour_list.end())
+			{
+				if(e_itr->n2 == new_e.n2)
+				{
+					e_itr->weight += new_e.weight;
+					return;
+				}
+				e_itr++;
+			}
+			neighbour_list.push_back(new_e);
+		}
 	}
 
 	void printGraph() 
