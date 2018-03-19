@@ -48,6 +48,7 @@ class Node
 		id = id1;
 		weight = 1;
 		matched = 0;
+		consumer = nullptr;
 	}
 
 	int preyExists(int level_coarsening)
@@ -57,7 +58,7 @@ class Node
 
 	int predatorExists()
 	{
-		if (consumer == 0)
+		if (consumer == nullptr)
 		{
 			return 0;
 		}	
@@ -104,6 +105,7 @@ public:
 		}
 		else
 		{
+			printf("ERROR Node does not exest x1 = %d\n", x1);
 			n1 = *(new Node(x1));
 		}
 		n1.neighbours = neighbours;
@@ -158,12 +160,12 @@ public:
 		while(itr != adjacency_list.end())
 		{
 			printf("Node- %d (%d)", get<0>(itr->second).getId(), get<0>(itr->second).weight);
-			// if (get<0>(itr->second).food != 0) // Food Exists
+			// if (get<0>(itr->second).food != nullptr) // Food Exists
 			// {
 			// 	printf("(F - %d)", get<0>(itr->second).food->id);
 			// }
 
-			// if (get<0>(itr->second).consumer != 0) // Consumer Exists
+			// if (get<0>(itr->second).consumer != nullptr) // Consumer Exists
 			// {
 			// 	printf(" (C - %d)", get<0>(itr->second).consumer->id);
 			// }
