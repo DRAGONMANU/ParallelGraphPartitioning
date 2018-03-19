@@ -71,7 +71,7 @@ map<int, int> Bipartition(Graph graph, int id)
 	map<int, int> :: iterator itr = labels.begin();
 	while(itr != labels.end())
 	{
-		printf("s%d\n", itr->second);
+		printf("%d %d\n", itr->first, itr->second);
 		itr++;
 	}
 	return labels;
@@ -80,28 +80,36 @@ map<int, int> Bipartition(Graph graph, int id)
 Graph updateEdges(Graph& graph, int level_coarsening)
 {
 	Graph new_graph = *(new Graph());
-	printf("in updateEdges - level = %d\n", level_coarsening);
+	// printf("in updateEdges - level = %d\n", level_coarsening);
+	// graph.printGraph();
 	map<int,  tuple<Node,vector <Edge>>> :: iterator iter = graph.adjacency_list.begin();
 	while(iter != graph.adjacency_list.end())
 	{
 		Node& old_n = get<0>(iter->second);
-		if(old_n.consumer != 0) // If consumed then don't add the node to the new graph
+		if(old_n.consumer != nullptr) // If consumed then don't add the node to the new graph
 		{
+			// printf("xx old_n id = %d\n", old_n.id);
 			iter++;
 			continue;
 		}
-		Node new_n = *(new Node(old_n.id));
-		new_n.weight = old_n.weight;
-		vector<Edge> new_neighbours;
-		new_graph.createAdjacencyList2(new_n, new_neighbours);
+		// printf("old_n id = %d\n", old_n.id);
 
+
+		Node new_n = old_n;
+		// printf("in updateEdges - new id = %d\n", old_n.id );
+
+		// new_n.id = old_n.id;
+		// new_n.weight = old_n.weight;
+		vector<Edge> new_neighbours;
+		new_graph.createAdjacencyList(new_n.id, new_neighbours);
+		// new_graph.printGraph();
+	
 		// inserting the edges of the original node
 		for (unsigned int j = 0; j < get<1>(iter->second).size(); ++j)
 		{
 			new_graph.insertEdge(old_n.id, graph.modifyEdgeWithParent(get<1>(iter->second)[j]));
 		}
 
-		printf("old_n id = %d\n", old_n.id);
 		if (old_n.preyExists(level_coarsening))
 		{
 			int prey_id = old_n.food_chain[level_coarsening]->id;
@@ -121,6 +129,9 @@ Graph updateEdges(Graph& graph, int level_coarsening)
 // Finds the internal matching and the external edges
 Graph FindMatching(Graph& graph,int id,int chunk_size, int level_coarsening)
 {
+	printf("\nFIND Matching  level = %d \n", level_coarsening);
+	graph.printGraph();
+
 	vector<tuple<Node,Node>> matchings;
 	map<int,  tuple<Node,vector <Edge>>> :: iterator iter = graph.adjacency_list.begin();
 	
@@ -158,7 +169,7 @@ Graph FindMatching(Graph& graph,int id,int chunk_size, int level_coarsening)
 			else
 			{
 				get<0>(iter->second).external_edges.push_back(*new Edge((get<1>(iter->second))[j].n2,1));
-				printf("ext %d - %d\n", get<0>(iter->second).id, get<1>(iter->second)[j].n2);
+				// printf("ext %d - %d\n", get<0>(iter->second).id, get<1>(iter->second)[j].n2);
 			}
 		}
 		iter++;
@@ -170,21 +181,27 @@ Graph FindMatching(Graph& graph,int id,int chunk_size, int level_coarsening)
 	}
 
 	Graph new_graph = updateEdges(graph, level_coarsening);
-	new_graph.printGraph();
+	// printf("++++++\n");
+	// new_graph.printGraph();
+	// printf("@+++++\n");
 	return new_graph;
 }
 
 
-map<int, int> Partition(Graph& input, int num_edges, int num_threads)
+map<int, int> Partition(Graph input, int num_edges, int num_threads)
 {
 	vector<Graph> breaks;
+	map<int, vector<Graph>> coarse_graphs;	//[proc][k_level]
+
 	for (int i = 0; i < num_threads; ++i)
 	{
 		breaks.push_back(*new Graph());
 	}
 	omp_set_num_threads(num_threads);
-#pragma omp parallel num_threads(num_threads)
+	
+	#pragma omp parallel num_threads(num_threads)
 	{
+
 		int id = omp_get_thread_num();
 		int chunk_size = input.adjacency_list.size()/num_threads;
 		if(id < num_threads-1)
@@ -204,17 +221,35 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 
 			}
 		}
-		//while(breaks[id].size()>10)
+		vector<Graph> coarse_p;
+		coarse_p.push_back(breaks[id]);
+		int k_level = 0;
+		do 
 		{
-		 	Graph g1 = FindMatching(breaks[id], id, chunk_size, 0);
-		 	Graph g2 = FindMatching(g1, id, chunk_size, 1);
-		 	Graph g3 = FindMatching(g2, id, chunk_size, 2);
+		 	coarse_p.push_back(FindMatching(coarse_p[k_level], id, chunk_size, k_level));
+		 	k_level++;
+		 	#pragma omp barrier
+		}while(k_level < 2);
+		
+		#pragma omp critical
+		{
+			coarse_graphs.insert(pair <int, vector<Graph>> (id, coarse_p));	
+		}
+		// Graph coarse_graph = Union(breaks);
 
+		// map<int, int> parts = Bipartition(coarse_graphs[id][k_level],0);
+	}
+	// {paralled ends}
+	for (int x = 0; x < num_threads; x++)
+	{	for (int y = 0; y < 3; y++)
+		{
+			printf("\n%d ---- %d \n", x, y);
+			coarse_graphs[x][y].printGraph();
 		}
 	}
+	// Find union of pralllel graojsafl
 
-	// Graph coarse_graph = Union(breaks);
-	map<int, int> parts = Bipartition(breaks[0],0);
+	map<int, int> parts;
 	// Project(parts,input.adjacency_list.size()); // vomit recursive till rhs is 0
 	return parts;
 }
