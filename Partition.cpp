@@ -217,7 +217,6 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 	map<int, int> parts = Bipartition(breaks[0],0);
 	// Project(parts,input.adjacency_list.size()); // vomit recursive till rhs is 0
 	return parts;
-
 }
 
 void print_vec(vector<int> arr, int size)
