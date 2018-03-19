@@ -10,9 +10,10 @@
 #include <iterator>
 #include "Graph.cpp"
 #include "Partition.cpp"
+#include <map>
 using namespace std;
 
-extern vector<Graph> Partition(Graph& input, int num_edges, int num_threads);
+extern map<int, int> Partition(Graph& input, int num_edges, int num_threads);
 
 int main() {
 	int num_threads = 1;
@@ -62,7 +63,7 @@ int main() {
 	//input_graph.printGraph();
 	double start_time = omp_get_wtime();
 	// printf("input size = %d\n", input.size());
-	vector<Graph> parts = Partition(input_graph, num_edges, num_threads);
+	map<int, int> parts = Partition(input_graph, num_edges, num_threads);
 	double time_taken = omp_get_wtime() - start_time;
 	// Printing stats and results
 	cout << "\nTime taken = " << time_taken << endl;

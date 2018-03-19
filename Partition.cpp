@@ -4,11 +4,80 @@
 #include <stdio.h>
 #include <math.h>
 #include <tuple>
+#include <map>
+#include <cstdlib>
+#include <list>
 
 using namespace std;;
-vector<Graph> Partition(Graph& input, int num_edges, int num_threads);
+// vector<Graph> Partition(Graph& input, int num_edges, int num_threads);
 void print_2d_vec(vector<vector<int>> arr, int size);
 void print_vec(vector<int> arr, int size);
+
+map<int, int> Bipartition(Graph graph, int id)
+{
+	map<int, int> labels;
+	map<int,  tuple<Node,vector <Edge>>> :: iterator iter = graph.adjacency_list.begin();
+	int total_weight = 0;
+	while(iter != graph.adjacency_list.end())
+	{
+		labels.insert(pair < int, int> (iter->first,0));
+		total_weight += get<0>(iter->second).weight;
+		iter++;
+	}
+	cout<<"total="<<total_weight<<endl;
+	tuple<Node,vector <Edge>> startNode;
+	iter = graph.adjacency_list.begin();
+	int temp = 0;
+	id = rand() % graph.adjacency_list.size();
+	while(iter != graph.adjacency_list.end())
+	{
+		if(temp<id)
+			temp++;
+		else
+		{
+			startNode = iter->second;
+			break;
+		}
+		iter++;
+	}
+
+	list<int> queue;
+	queue.push_back(get<0>(startNode).id);
+	labels[get<0>(startNode).id] = 1;
+	int weight = 0;
+	
+	while(!queue.empty())
+	{
+		//printf("%d\n", weight);
+		int s = queue.front();
+		labels[s] = 1;
+		iter = graph.adjacency_list.begin();
+		weight = 0;
+		while(iter != graph.adjacency_list.end())
+		{
+			if(labels[get<0>(iter->second).id]==1)
+				weight += get<0>(iter->second).weight;
+			iter++;
+		}
+		printf("%d\n", weight); 
+		if(weight>=0.5*total_weight)
+			break;
+		queue.pop_front();
+		for(unsigned int i = 0; i< get<1>(graph.adjacency_list[s]).size();i++)
+		{
+			if(labels[get<1>(graph.adjacency_list[s])[i].n2]==0)
+				queue.push_back(get<1>(graph.adjacency_list[s])[i].n2);
+		}
+	}
+	map<int, int> :: iterator itr = labels.begin();
+	while(itr != labels.end())
+	{
+		printf("s%d\n", itr->second);
+		itr++;
+	}
+	return labels;
+}
+
 
 // Finds the internal matching and the external edges
 void FindMatching(Graph& graph,int id,int chunk_size)
@@ -68,7 +137,7 @@ void FindMatching(Graph& graph,int id,int chunk_size)
 }
 
 
-vector<Graph> Partition(Graph& input, int num_edges, int num_threads)
+map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 {
 	vector<Graph> breaks;
 	for (int i = 0; i < num_threads; ++i)
@@ -98,15 +167,13 @@ vector<Graph> Partition(Graph& input, int num_edges, int num_threads)
 			}
 		}
 		//while(breaks[id].size()>10)
-		{
+		// {
 		 	FindMatching(breaks[id],id,chunk_size);
-		}
+		// }
 	}
 
-
-	vector<Graph> parts;
 	// Graph coarse_graph = Union(breaks);
-	// vector<Graph> parts = Bipartition(coarse_graph);
+	map<int, int> parts = Bipartition(breaks[0],0);
 	// Project(parts,input.adjacency_list.size()); // vomit recursive till rhs is 0
 	return parts;
 
