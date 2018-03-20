@@ -77,14 +77,18 @@ map<int, int> Bipartition(Graph graph, int id)
 	return labels;
 }
 
-Graph updateEdges(Graph& graph, int level_coarsening)
+Graph updateEdges(Graph& graph, int level_coarsening, int debug)
 {
 	Graph new_graph = *(new Graph());
-	// printf("in updateEdges - level = %d\n", level_coarsening);
-	// graph.printGraph();
+	if (debug)
+	{
+		printf("in updateEdges - level = %d\n", level_coarsening);
+		graph.printGraph();
+	}
 	map<int,  tuple<Node,vector <Edge>>> :: iterator iter = graph.adjacency_list.begin();
 	while(iter != graph.adjacency_list.end())
 	{
+		printf("----count\n");
 		Node& old_n = get<0>(iter->second);
 		if(old_n.consumer != nullptr) // If consumed then don't add the node to the new graph
 		{
@@ -127,11 +131,14 @@ Graph updateEdges(Graph& graph, int level_coarsening)
 }
 
 // Finds the internal matching and the external edges
-Graph FindMatching(Graph& graph,int id,int chunk_size, int level_coarsening)
+Graph FindMatching(Graph& graph,int id,int chunk_size, int level_coarsening, int debug)
 {
-	printf("\nFIND Matching  level = %d \n", level_coarsening);
-	graph.printGraph();
-
+	
+	if (debug)
+	{
+		printf("\nFIND Matching  level = %d \n", level_coarsening);
+		graph.printGraph();
+	}
 	vector<tuple<Node,Node>> matchings;
 	map<int,  tuple<Node,vector <Edge>>> :: iterator iter = graph.adjacency_list.begin();
 	
@@ -174,13 +181,15 @@ Graph FindMatching(Graph& graph,int id,int chunk_size, int level_coarsening)
 		}
 		iter++;
 	}
-	printf("matches\n");
-	for (unsigned int i = 0; i < matchings.size(); ++i)
+	if(debug)
 	{
-		printf("%d - %d\n", get<0>(matchings[i]).id,get<1>(matchings[i]).id);
+		printf("matches\n");
+		for (unsigned int i = 0; i < matchings.size(); ++i)
+		{
+			printf("%d - %d\n", get<0>(matchings[i]).id,get<1>(matchings[i]).id);
+		}
 	}
-
-	Graph new_graph = updateEdges(graph, level_coarsening);
+	Graph new_graph = updateEdges(graph, level_coarsening, debug);
 	// printf("++++++\n");
 	// new_graph.printGraph();
 	// printf("@+++++\n");
@@ -188,7 +197,7 @@ Graph FindMatching(Graph& graph,int id,int chunk_size, int level_coarsening)
 }
 
 
-map<int, int> Partition(Graph input, int num_edges, int num_threads)
+map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 {
 	vector<Graph> breaks;
 	map<int, vector<Graph>> coarse_graphs;	//[proc][k_level]
@@ -204,11 +213,18 @@ map<int, int> Partition(Graph input, int num_edges, int num_threads)
 
 		int id = omp_get_thread_num();
 		int chunk_size = input.adjacency_list.size()/num_threads;
+		int debug = 0;
+		if(id == 0) 
+		{	
+			debug = 1;
+		}
+
 		if(id < num_threads-1)
 		{ 
 			for(int i=id*chunk_size;i<(id+1)*chunk_size;i++)
 			{
 				//TODO change this function
+				
 				breaks[id].createAdjacencyList(i+1,get<1>(input.adjacency_list[i+1]));
 			}
 		}
@@ -226,7 +242,7 @@ map<int, int> Partition(Graph input, int num_edges, int num_threads)
 		int k_level = 0;
 		do 
 		{
-		 	coarse_p.push_back(FindMatching(coarse_p[k_level], id, chunk_size, k_level));
+		 	coarse_p.push_back(FindMatching(coarse_p[k_level], id, chunk_size, k_level, debug));
 		 	k_level++;
 		 	#pragma omp barrier
 		}while(k_level < 2);
