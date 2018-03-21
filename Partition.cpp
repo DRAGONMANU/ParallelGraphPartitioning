@@ -88,41 +88,54 @@ Graph updateEdges(Graph& graph, int level_coarsening, int debug)
 	map<int,  tuple<Node,vector <Edge>>> :: iterator iter = graph.adjacency_list.begin();
 	while(iter != graph.adjacency_list.end())
 	{
-		printf("----count\n");
 		Node& old_n = get<0>(iter->second);
+		
+		if (debug)
+		{
+			printf("----check old_n id = %d\n", old_n.id);
+			graph.printGraph();
+			printf("\nNEw Graph\n");
+			new_graph.printGraph();
+
+		}
 		if(old_n.consumer != nullptr) // If consumed then don't add the node to the new graph
 		{
-			// printf("xx old_n id = %d\n", old_n.id);
 			iter++;
 			continue;
 		}
-		// printf("old_n id = %d\n", old_n.id);
 
-
-		Node new_n = old_n;
-		// printf("in updateEdges - new id = %d\n", old_n.id );
-
-		// new_n.id = old_n.id;
-		// new_n.weight = old_n.weight;
+		Node new_n = *(new Node(old_n.id));
+		new_n.weight = old_n.weight;
 		vector<Edge> new_neighbours;
-		new_graph.createAdjacencyList(new_n.id, new_neighbours);
-		// new_graph.printGraph();
-	
-		// inserting the edges of the original node
-		for (unsigned int j = 0; j < get<1>(iter->second).size(); ++j)
-		{
-			new_graph.insertEdge(old_n.id, graph.modifyEdgeWithParent(get<1>(iter->second)[j]));
-		}
+		new_graph.createAdjacencyList2(new_n, new_neighbours);
 
+		// inserting the edges of the original node
+		if (debug) printf("PRINTING EDGES\n");
+		for (Edge old_edge : get<1>(iter->second))
+		{
+			Edge modified_edge = graph.modifyEdgeWithParent(old_edge);
+			if(debug) modified_edge.printEdge();
+			new_graph.insertEdge(old_n.id, modified_edge);
+		}	
+		if (debug) printf("\n");
+
+		if(debug) 
+		{
+			// graph.printGraph();
+		}
 		if (old_n.preyExists(level_coarsening))
 		{
 			int prey_id = old_n.food_chain[level_coarsening]->id;
 			//inserting the edges of the prey
+			if (debug) printf("PRINTING EDGES of Prey\n");
 			vector<Edge> prey_edges = get<1>(graph.adjacency_list[prey_id]);
 			for (unsigned int j = 0; j < prey_edges.size(); ++j)
 			{
-				new_graph.insertEdge(old_n.id, graph.modifyEdgeWithParent(prey_edges[j]));
+				Edge modified_edge = graph.modifyEdgeWithParent(prey_edges[j]);
+				if(debug) modified_edge.printEdge();
+				new_graph.insertEdge(old_n.id, modified_edge);
 			}
+			if (debug) printf("\n");
 		}
 		iter++;
 	}
@@ -216,7 +229,7 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 		int debug = 0;
 		if(id == 0) 
 		{	
-			debug = 1;
+			debug = 0;
 		}
 
 		if(id < num_threads-1)
