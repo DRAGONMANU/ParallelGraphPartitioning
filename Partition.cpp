@@ -13,9 +13,18 @@ void print_2d_vec(vector<vector<int>> arr, int size);
 void print_vec(vector<int> arr, int size);
 map <int, vector<int>> Food_Chain;
 
-map <int, int> Uncoarsen(Graph g, map <int, int> partial_label)
+map <int, int> Uncoarsen(Graph graph, map <int, int> partial_label)
 {
-
+	map<int,  tuple<Node,vector <Edge> > > :: iterator iter = graph.adjacency_list.begin();
+	while(iter != graph.adjacency_list.end())
+	{
+		Node& n = get<0>(iter->second);
+		if (partial_label.find(n.id) == partial_label.end()) // Partial label does not exist
+		{
+			partial_label[n.id] = partial_label[graph.findMasterPredator(n.id)];
+		}
+		iter++;
+	}
 	return partial_label;
 }
 int EdgeCut(map<int, int> labels,Graph graph)
@@ -41,7 +50,7 @@ int EdgeCut(map<int, int> labels,Graph graph)
 	return sum;
 }
 
-int STOPPING_CONDITION = 10;
+int STOPPING_CONDITION = 5;
 
 map<int, int> Bipartition(Graph graph)
 {
@@ -347,18 +356,20 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 	union_coarse_graphs.insert(pair <int, Graph> (0, updateEdges(coarse_graphs[0][0], 0, 0, 0)));
 	union_coarse_graphs[0].printGraph();
 	printf("Number of nodes = %d\n", union_coarse_graphs[0].numNodes());
-	// map<int, int> parts = Bipartition(coarse_graphs[0][0]);
-	// cout<<"mincut="<<EdgeCut(parts,coarse_graphs[0][0]);
-	for (unsigned int i = 1; i < Food_Chain.size(); i++)
+	map<int, int> parts = Uncoarsen(coarse_graphs[0][0], Bipartition(union_coarse_graphs[0]));
+	cout<<"mincut="<<EdgeCut(parts,coarse_graphs[0][0]) << endl;
+	
+	map<int,  std::vector<int>> :: iterator FCiter = Food_Chain.begin();
+	while(FCiter != Food_Chain.end())
 	{
-		printf("%d : ", i);
-		for (int x : Food_Chain[i])
+		printf("%d : ", FCiter->first);
+		for (int x : FCiter->second)
 		{
 			printf("%d ", x);
 		}
 		printf("\n");
+		FCiter++;
 	}
-	map<int, int> parts;
 	// Project(parts,input.adjacency_list.size()); // vomit recursive till rhs is 0
 	return parts;
 }

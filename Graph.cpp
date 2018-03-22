@@ -125,6 +125,20 @@ public:
 		adjacency_list.insert( pair < int, tuple<Node,vector <Edge> > > (n1.getId(),  make_tuple(n1, neighbours)) );
 	}
 
+	int findMasterPredator(int n)
+	{
+		int mod_n = n;
+		if (NodeExists(n) != 0)
+		{
+			Node& node = getNode(n);
+			if(node.predatorExists() > 0)
+			{
+				mod_n = node.consumer;
+				mod_n = findMasterPredator(mod_n);
+			}
+		}
+		return mod_n;
+	}
 	Edge modifyEdgeWithParent(Edge& e)
 	{
 		int node2_id = e.n2;
