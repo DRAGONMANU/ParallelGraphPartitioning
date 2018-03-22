@@ -16,7 +16,7 @@ using namespace std;
 extern map<int, int> Partition(Graph& input, int num_edges, int num_threads);
 
 int main() {
-	int num_threads = 2;
+	int num_threads = 1;
 	int num_nodes;
 	int num_edges;
 	string line;
@@ -30,7 +30,7 @@ int main() {
 
 	printf("num edge = %d num nodes = %d\n", num_edges, num_nodes);
 
-	// vector<vector<int>> input(num_nodes);
+	// vector<vector<int> > input(num_nodes);
 	// vector<int> output;
 	
 	Graph input_graph = *(new Graph());
@@ -42,9 +42,9 @@ int main() {
 			getline(myfile, line);
 			istringstream is(line);
 			vector<int> v((istream_iterator<int>(is)), istream_iterator<int>());
-			for (int x : v) std::cout << x << ' ';
-			std::cout << std::endl;
-			std::vector<Edge> ve;
+			for (int x : v) cout << x << ' ';
+			cout << std::endl;
+			vector<Edge> ve;
 			for (unsigned int i = 0; i < v.size(); i++)
 			{
 				ve.push_back( *(new Edge(v[i], 1)));

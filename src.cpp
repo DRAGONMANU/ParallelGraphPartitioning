@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 	{
 		for (std::vector<int>::iterator it=myvector.begin(); it!=myvector.end(); ++it)
 	   	{
-		    outfile << *it << "\n";
+		    outfile << *it << " ";
 		}
 	}
 	return 0;

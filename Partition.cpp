@@ -7,15 +7,39 @@
 #include <map>
 #include <cstdlib>
 #include <list>
-
+#include <time.h>
 using namespace std;;
 void print_2d_vec(vector<vector<int>> arr, int size);
 void print_vec(vector<int> arr, int size);
 
-map<int, int> Bipartition(Graph graph, int id)
+int EdgeCut(map<int, int> labels,Graph graph)
+{
+	map<int, int> :: iterator itr = labels.begin();
+	int sum = 0;
+	while(itr != labels.end())
+	{
+		printf("%d\n",itr->second );		
+		if(itr->second==1)
+			itr++;
+		else
+		{
+			vector <Edge> edges = get<1>(graph.adjacency_list[itr->first]);
+			for(Edge e : edges)
+			{
+				if(labels[e.n2] == 1)
+					sum += e.weight; 
+			}
+			itr++;
+		}
+	}
+	return sum;
+}
+
+
+map<int, int> Bipartition(Graph graph)
 {
 	map<int, int> labels;
-	map<int,  tuple<Node,vector <Edge>>> :: iterator iter = graph.adjacency_list.begin();
+	map<int,  tuple<Node,vector <Edge> > > :: iterator iter = graph.adjacency_list.begin();
 	int total_weight = 0;
 	while(iter != graph.adjacency_list.end())
 	{
@@ -24,10 +48,11 @@ map<int, int> Bipartition(Graph graph, int id)
 		iter++;
 	}
 	cout<<"total="<<total_weight<<endl;
-	tuple<Node,vector <Edge>> startNode;
+	tuple<Node,vector <Edge> > startNode;
 	iter = graph.adjacency_list.begin();
 	int temp = 0;
-	id = rand() % graph.adjacency_list.size();
+	srand (time(NULL));
+	int id = rand() % graph.adjacency_list.size();
 	while(iter != graph.adjacency_list.end())
 	{
 		if(temp<id)
@@ -85,7 +110,7 @@ Graph updateEdges(Graph& graph, int level_coarsening, int debug)
 		printf("in updateEdges - level = %d\n", level_coarsening);
 		graph.printGraph();
 	}
-	map<int,  tuple<Node,vector <Edge>>> :: iterator iter = graph.adjacency_list.begin();
+	map<int,  tuple<Node,vector <Edge> > > :: iterator iter = graph.adjacency_list.begin();
 	while(iter != graph.adjacency_list.end())
 	{
 		Node& old_n = get<0>(iter->second);
@@ -146,7 +171,7 @@ Graph updateEdges(Graph& graph, int level_coarsening, int debug)
 }
 
 // Finds the internal matching and the external edges
-Graph FindMatching(Graph& graph,int id,int chunk_size, int level_coarsening, int debug)
+Graph FindMatching(Graph graph,int id,int chunk_size, int level_coarsening, int debug)
 {
 	
 	if (debug)
@@ -154,8 +179,8 @@ Graph FindMatching(Graph& graph,int id,int chunk_size, int level_coarsening, int
 		printf("\nFIND Matching  level = %d \n", level_coarsening);
 		graph.printGraph();
 	}
-	vector<tuple<Node,Node>> matchings;
-	map<int,  tuple<Node,vector <Edge>>> :: iterator iter = graph.adjacency_list.begin();
+	vector<tuple<Node,Node> > matchings;
+	map<int,  tuple<Node,vector <Edge> > > :: iterator iter = graph.adjacency_list.begin();
 	
 	while(iter != graph.adjacency_list.end())
 	{
@@ -215,7 +240,7 @@ Graph FindMatching(Graph& graph,int id,int chunk_size, int level_coarsening, int
 map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 {
 	vector<Graph> breaks;
-	map<int, vector<Graph>> coarse_graphs;	//[proc][k_level]
+	map<int, vector<Graph> > coarse_graphs;	//[proc][k_level]
 
 	for (int i = 0; i < num_threads; ++i)
 	{
@@ -263,14 +288,14 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 		
 		#pragma omp critical
 		{
-			coarse_graphs.insert(pair <int, vector<Graph>> (id, coarse_p));	
+			coarse_graphs.insert(pair <int, vector<Graph> > (id, coarse_p));	
 		}
 		// Graph coarse_graph = Union(breaks);
 
 		// map<int, int> parts = Bipartition(coarse_graphs[id][k_level],0);
 	}
 	// {paralled ends}
-	for (int y = 0; y < 3; y++)
+	for (int y = 0; y < k_level; y++)
 	{
 		for (int x = 0; x < num_threads; x++)
 		{
@@ -279,9 +304,11 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 
 		}
 	}
+	map<int, int> parts = Bipartition(coarse_graphs[0][k_level-1]);
+	cout<<"mincut="<<EdgeCut(parts,coarse_graphs[0][k_level-1]);
 	// TODO: Find union of pralllel graphs 
 
-	map<int, int> parts;
+	// map<int, int> parts;
 	// Project(parts,input.adjacency_list.size()); // vomit recursive till rhs is 0
 	return parts;
 }
@@ -295,7 +322,7 @@ void print_vec(vector<int> arr, int size)
 	printf("%d (%d)]\n", arr[size - 1], (size - 1));
 }
 
-void print_2d_vec(vector<vector<int>> arr, int size)
+void print_2d_vec(vector<vector<int> > arr, int size)
 {
 	printf("2d size = %d\n", size);
 	printf("\n[ ");

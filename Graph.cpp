@@ -83,7 +83,7 @@ class Node
 class Graph
 {
 public:
-	map<int, tuple<Node,vector <Edge>>> adjacency_list;
+	map<int, tuple<Node,vector <Edge> > > adjacency_list;
 	
 	int NodeExists(int x)
 	{
@@ -112,13 +112,13 @@ public:
 			n1 = *(new Node(x1));
 		}
 		n1.neighbours = neighbours;
-		adjacency_list.insert( pair < int, tuple<Node,vector <Edge>> > (n1.getId(),  make_tuple(n1, neighbours)) );
+		adjacency_list.insert( pair < int, tuple<Node,vector <Edge> > > (n1.getId(),  make_tuple(n1, neighbours)) );
 	}
 
 	void createAdjacencyList2(Node& n1, vector<Edge> neighbours)
 	{
 		n1.neighbours = neighbours;
-		adjacency_list.insert( pair < int, tuple<Node,vector <Edge>> > (n1.getId(),  make_tuple(n1, neighbours)) );
+		adjacency_list.insert( pair < int, tuple<Node,vector <Edge> > > (n1.getId(),  make_tuple(n1, neighbours)) );
 	}
 
 	Edge modifyEdgeWithParent(Edge& e)
@@ -164,7 +164,7 @@ public:
 	{
 		printf("Printing Graph\n");
 
-		map<int,  tuple<Node,vector <Edge>>> :: iterator itr = adjacency_list.begin();
+		map<int,  tuple<Node,vector <Edge> > > :: iterator itr = adjacency_list.begin();
 		while(itr != adjacency_list.end())
 		{
 			printf("Node: %d (%d)", get<0>(itr->second).getId(), get<0>(itr->second).weight);
