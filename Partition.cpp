@@ -51,6 +51,39 @@ int EdgeCut(map<int, int> labels,Graph graph)
 	return sum;
 }
 
+vector<Graph> divideGraph(Graph graph, map<int, int> labels)
+{
+	map<int,  tuple<Node,vector <Edge> > > :: iterator iter = graph.adjacency_list.begin();
+	vector<Graph> out;
+	out.push_back(*(new Graph())); // first graph 
+	out.push_back(*(new Graph())); // second graph
+	while(iter != graph.adjacency_list.end())
+	{
+		Node node = get<0>(iter->second);
+		Graph& g = out[(int)(labels[node.id])];
+		for (Edge e : get<1>(iter->second))
+		{
+			if((int)(labels[node.id]) != labels[e.n2])
+			{
+				continue;
+			}
+			e.printEdge();
+			if (not g.NodeExists(node.id))
+			{
+				vector<Edge> ve;
+				g.createAdjacencyList2(node, ve);
+			}
+			g.getEdges(node.id).push_back(e);
+
+		}
+		printf("\n");
+		iter++;
+	}
+	printf("division bell - Pink Floyd\n");
+	out[1].printGraph();
+	out[2].printGraph();
+	return out;
+}
 
 map<int, int> Bipartition(Graph graph)
 {
@@ -115,6 +148,7 @@ map<int, int> Bipartition(Graph graph)
 	// 	printf("%d %d\n", itr->first, itr->second);
 	// 	itr++;
 	// }
+
 	return labels;
 }
 
@@ -358,15 +392,20 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 	}
 	printf("Union find\n");
 	union_coarse_graphs.insert(pair <int, Graph> (0, updateEdges(coarse_graphs[0][0], 0, 0, 0)));
-	// union_coarse_graphs[0].printGraph();
+	coarse_graphs[0][0].printGraph();
 	printf("Number of nodes = %d\n", union_coarse_graphs[0].numNodes());
 	
 	double start_time = omp_get_wtime();
 	map<int, int> parts = Uncoarsen(coarse_graphs[0][0], Bipartition(union_coarse_graphs[0]));
 	double time_taken = omp_get_wtime() - start_time;
 	cout << "\nTime taken (Bipartition) = " << time_taken << endl;
-
+	
+	for (int i = 1; i <= (int)(parts.size()); i++)
+	{
+		cout << i << ": " << parts[i] << "\n";
+	}
 	cout<<"mincut="<<EdgeCut(parts,coarse_graphs[0][0]) << endl;
+	vector<Graph> div = divideGraph(input, parts);
 	
 	// map<int,  std::vector<int>> :: iterator FCiter = Food_Chain.begin();
 	// while(FCiter != Food_Chain.end())

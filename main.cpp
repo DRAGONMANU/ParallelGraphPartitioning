@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
 	ofstream outfile(argv[2]);
 	if(outfile.is_open())
 	{
-		for (int i = 0; i < num_nodes; i++)
+		for (int i = 1; i <= (int)(parts.size()); i++)
 		{
 			outfile << parts[i] << " ";
 		}
