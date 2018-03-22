@@ -95,6 +95,10 @@ public:
 		return get<0>(adjacency_list[x]);
 	}
 
+	int numNodes()
+	{
+		return adjacency_list.size();
+	}
 	vector<Edge>& getEdges(int node_id)
 	{
 		return get<1>(adjacency_list[node_id]);
