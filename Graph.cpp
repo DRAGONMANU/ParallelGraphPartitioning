@@ -40,9 +40,12 @@ class Node
 	Node* consumer;
 	vector<Edge> neighbours;
 	vector<Edge> external_edges;
+	
 	Node(){
 		id = -1;
+		weight = 1;
 		matched = 0;
+		consumer = nullptr;
 	}
 	Node(int id1) {
 		id = id1;
@@ -50,6 +53,7 @@ class Node
 		matched = 0;
 		consumer = nullptr;
 	}
+
 
 	int preyExists(int level_coarsening)
 	{
@@ -81,7 +85,6 @@ class Graph
 public:
 	map<int, tuple<Node,vector <Edge>>> adjacency_list;
 	
-	
 	int NodeExists(int x)
 	{
 		return (adjacency_list.find(x) != adjacency_list.end());
@@ -105,7 +108,7 @@ public:
 		}
 		else
 		{
-			printf("ERROR Node does not exest x1 = %d\n", x1);
+			//printf("ERROR Node does not exest x1 = %d\n", x1);
 			n1 = *(new Node(x1));
 		}
 		n1.neighbours = neighbours;
@@ -118,15 +121,20 @@ public:
 		adjacency_list.insert( pair < int, tuple<Node,vector <Edge>> > (n1.getId(),  make_tuple(n1, neighbours)) );
 	}
 
-	Edge modifyEdgeWithParent(Edge e)
+	Edge modifyEdgeWithParent(Edge& e)
 	{
 		int node2_id = e.n2;
-		Node& node2 = getNode(node2_id);
-		if(node2.predatorExists() > 0)
+		Edge mod_e = *(new Edge(e.n2, e.weight));
+
+		if (NodeExists(node2_id) != 0)
 		{
-			e.n2 = (node2.consumer)->id;
+			Node& node2 = getNode(node2_id);
+			if(node2.predatorExists() > 0)
+			{
+				mod_e.n2 = (node2.consumer)->id;
+			}
 		}
-		return e;
+		return mod_e;
 	}
 	void insertEdge(int node_id, Edge new_e)
 	{
@@ -159,7 +167,7 @@ public:
 		map<int,  tuple<Node,vector <Edge>>> :: iterator itr = adjacency_list.begin();
 		while(itr != adjacency_list.end())
 		{
-			printf("Node- %d (%d)", get<0>(itr->second).getId(), get<0>(itr->second).weight);
+			printf("Node: %d (%d)", get<0>(itr->second).getId(), get<0>(itr->second).weight);
 			// if (get<0>(itr->second).food != nullptr) // Food Exists
 			// {
 			// 	printf("(F - %d)", get<0>(itr->second).food->id);

@@ -77,48 +77,67 @@ map<int, int> Bipartition(Graph graph, int id)
 	return labels;
 }
 
-Graph updateEdges(Graph& graph, int level_coarsening)
+Graph updateEdges(Graph& graph, int level_coarsening, int debug)
 {
 	Graph new_graph = *(new Graph());
-	// printf("in updateEdges - level = %d\n", level_coarsening);
-	// graph.printGraph();
+	if (debug)
+	{
+		printf("in updateEdges - level = %d\n", level_coarsening);
+		graph.printGraph();
+	}
 	map<int,  tuple<Node,vector <Edge>>> :: iterator iter = graph.adjacency_list.begin();
 	while(iter != graph.adjacency_list.end())
 	{
 		Node& old_n = get<0>(iter->second);
+		
+		if (debug)
+		{
+			printf("----check old_n id = %d\n", old_n.id);
+			graph.printGraph();
+			printf("\nNEw Graph\n");
+			new_graph.printGraph();
+
+		}
+		
+
+		Node new_n = *(new Node(old_n.id));
+		new_n.weight = old_n.weight;
+		vector<Edge> new_neighbours;
+		new_graph.createAdjacencyList2(new_n, new_neighbours);
+
 		if(old_n.consumer != nullptr) // If consumed then don't add the node to the new graph
 		{
-			// printf("xx old_n id = %d\n", old_n.id);
 			iter++;
 			continue;
 		}
-		// printf("old_n id = %d\n", old_n.id);
 
-
-		Node new_n = old_n;
-		// printf("in updateEdges - new id = %d\n", old_n.id );
-
-		// new_n.id = old_n.id;
-		// new_n.weight = old_n.weight;
-		vector<Edge> new_neighbours;
-		new_graph.createAdjacencyList(new_n.id, new_neighbours);
-		// new_graph.printGraph();
-	
 		// inserting the edges of the original node
-		for (unsigned int j = 0; j < get<1>(iter->second).size(); ++j)
+		if (debug) printf("PRINTING EDGES\n");
+		for (Edge old_edge : get<1>(iter->second))
 		{
-			new_graph.insertEdge(old_n.id, graph.modifyEdgeWithParent(get<1>(iter->second)[j]));
-		}
+			Edge modified_edge = graph.modifyEdgeWithParent(old_edge);
+			if(debug) modified_edge.printEdge();
+			new_graph.insertEdge(old_n.id, modified_edge);
+		}	
+		if (debug) printf("\n");
 
+		if(debug) 
+		{
+			// graph.printGraph();
+		}
 		if (old_n.preyExists(level_coarsening))
 		{
 			int prey_id = old_n.food_chain[level_coarsening]->id;
 			//inserting the edges of the prey
+			if (debug) printf("PRINTING EDGES of Prey\n");
 			vector<Edge> prey_edges = get<1>(graph.adjacency_list[prey_id]);
 			for (unsigned int j = 0; j < prey_edges.size(); ++j)
 			{
-				new_graph.insertEdge(old_n.id, graph.modifyEdgeWithParent(prey_edges[j]));
+				Edge modified_edge = graph.modifyEdgeWithParent(prey_edges[j]);
+				if(debug) modified_edge.printEdge();
+				new_graph.insertEdge(old_n.id, modified_edge);
 			}
+			if (debug) printf("\n");
 		}
 		iter++;
 	}
@@ -127,11 +146,14 @@ Graph updateEdges(Graph& graph, int level_coarsening)
 }
 
 // Finds the internal matching and the external edges
-Graph FindMatching(Graph& graph,int id,int chunk_size, int level_coarsening)
+Graph FindMatching(Graph& graph,int id,int chunk_size, int level_coarsening, int debug)
 {
-	printf("\nFIND Matching  level = %d \n", level_coarsening);
-	graph.printGraph();
-
+	
+	if (debug)
+	{
+		printf("\nFIND Matching  level = %d \n", level_coarsening);
+		graph.printGraph();
+	}
 	vector<tuple<Node,Node>> matchings;
 	map<int,  tuple<Node,vector <Edge>>> :: iterator iter = graph.adjacency_list.begin();
 	
@@ -174,13 +196,15 @@ Graph FindMatching(Graph& graph,int id,int chunk_size, int level_coarsening)
 		}
 		iter++;
 	}
-	printf("matches\n");
-	for (unsigned int i = 0; i < matchings.size(); ++i)
+	if(debug)
 	{
-		printf("%d - %d\n", get<0>(matchings[i]).id,get<1>(matchings[i]).id);
+		printf("matches\n");
+		for (unsigned int i = 0; i < matchings.size(); ++i)
+		{
+			printf("%d - %d\n", get<0>(matchings[i]).id,get<1>(matchings[i]).id);
+		}
 	}
-
-	Graph new_graph = updateEdges(graph, level_coarsening);
+	Graph new_graph = updateEdges(graph, level_coarsening, debug);
 	// printf("++++++\n");
 	// new_graph.printGraph();
 	// printf("@+++++\n");
@@ -188,7 +212,7 @@ Graph FindMatching(Graph& graph,int id,int chunk_size, int level_coarsening)
 }
 
 
-map<int, int> Partition(Graph input, int num_edges, int num_threads)
+map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 {
 	vector<Graph> breaks;
 	map<int, vector<Graph>> coarse_graphs;	//[proc][k_level]
@@ -199,16 +223,23 @@ map<int, int> Partition(Graph input, int num_edges, int num_threads)
 	}
 	omp_set_num_threads(num_threads);
 	
+	int k_level = 0; // level of coarsening each processor does
+	
 	#pragma omp parallel num_threads(num_threads)
 	{
 
 		int id = omp_get_thread_num();
 		int chunk_size = input.adjacency_list.size()/num_threads;
+		int debug = 0;
+		if(id == 0) 
+		{	
+			debug = 0	;
+		}
+
 		if(id < num_threads-1)
 		{ 
 			for(int i=id*chunk_size;i<(id+1)*chunk_size;i++)
 			{
-				//TODO change this function
 				breaks[id].createAdjacencyList(i+1,get<1>(input.adjacency_list[i+1]));
 			}
 		}
@@ -216,20 +247,19 @@ map<int, int> Partition(Graph input, int num_edges, int num_threads)
 		{
 			for (unsigned int i = id*chunk_size; i < input.adjacency_list.size(); ++i)
 			{
-				//TODO change this function
 				breaks[id].createAdjacencyList(i+1,get<1>(input.adjacency_list[i+1]));
-
 			}
 		}
 		vector<Graph> coarse_p;
 		coarse_p.push_back(breaks[id]);
-		int k_level = 0;
 		do 
 		{
-		 	coarse_p.push_back(FindMatching(coarse_p[k_level], id, chunk_size, k_level));
+		 	coarse_p.push_back(FindMatching(coarse_p[k_level], id, chunk_size, k_level, debug));
 		 	k_level++;
 		 	#pragma omp barrier
-		}while(k_level < 2);
+		}
+		// TODO: Set a stopping condition which is consistent with all the threads
+		while(k_level < 2);
 		
 		#pragma omp critical
 		{
@@ -240,14 +270,16 @@ map<int, int> Partition(Graph input, int num_edges, int num_threads)
 		// map<int, int> parts = Bipartition(coarse_graphs[id][k_level],0);
 	}
 	// {paralled ends}
-	for (int x = 0; x < num_threads; x++)
-	{	for (int y = 0; y < 3; y++)
+	for (int y = 0; y < 3; y++)
+	{
+		for (int x = 0; x < num_threads; x++)
 		{
 			printf("\n%d ---- %d \n", x, y);
 			coarse_graphs[x][y].printGraph();
+
 		}
 	}
-	// Find union of pralllel graojsafl
+	// TODO: Find union of pralllel graphs 
 
 	map<int, int> parts;
 	// Project(parts,input.adjacency_list.size()); // vomit recursive till rhs is 0
