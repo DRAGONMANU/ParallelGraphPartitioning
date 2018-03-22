@@ -12,6 +12,7 @@ using namespace std;;
 void print_2d_vec(vector<vector<int>> arr, int size);
 void print_vec(vector<int> arr, int size);
 map <int, vector<int>> Food_Chain;
+int STOPPING_CONDITION = 10;
 
 map <int, int> Uncoarsen(Graph graph, map <int, int> partial_label)
 {
@@ -33,7 +34,7 @@ int EdgeCut(map<int, int> labels,Graph graph)
 	int sum = 0;
 	while(itr != labels.end())
 	{
-		printf("%d\n",itr->second );		
+		// printf("%d\n",itr->second );		
 		if(itr->second==1)
 			itr++;
 		else
@@ -50,7 +51,6 @@ int EdgeCut(map<int, int> labels,Graph graph)
 	return sum;
 }
 
-int STOPPING_CONDITION = 5;
 
 map<int, int> Bipartition(Graph graph)
 {
@@ -99,7 +99,7 @@ map<int, int> Bipartition(Graph graph)
 				weight += get<0>(iter->second).weight;
 			iter++;
 		}
-		printf("%d\n", weight); 
+		// printf("%d\n", weight); 
 		if(weight>=0.5*total_weight)
 			break;
 		queue.pop_front();
@@ -109,12 +109,12 @@ map<int, int> Bipartition(Graph graph)
 				queue.push_back(get<1>(graph.adjacency_list[s])[i].n2);
 		}
 	}
-	map<int, int> :: iterator itr = labels.begin();
-	while(itr != labels.end())
-	{
-		printf("%d %d\n", itr->first, itr->second);
-		itr++;
-	}
+	// map<int, int> :: iterator itr = labels.begin();
+	// while(itr != labels.end())
+	// {
+	// 	printf("%d %d\n", itr->first, itr->second);
+	// 	itr++;
+	// }
 	return labels;
 }
 
@@ -256,7 +256,7 @@ Graph FindMatching(Graph graph,int id,int chunk_size, int level_coarsening, int 
 		}
 		iter++;
 	}
-	// if(debug)
+	if(debug)
 	{
 		printf("matches\n");
 		for (unsigned int i = 0; i < matchings.size(); ++i)
@@ -318,6 +318,10 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 		 	k_level++;
 		 	#pragma omp barrier
 		 	printf("Level = %d\n", k_level);
+		 	#pragma omp single
+		 	{
+
+		 	}
 		}
 		// TODO: Set a stopping condition which is consistent with all the threads
 		
@@ -354,22 +358,27 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 	}
 	printf("Union find\n");
 	union_coarse_graphs.insert(pair <int, Graph> (0, updateEdges(coarse_graphs[0][0], 0, 0, 0)));
-	union_coarse_graphs[0].printGraph();
+	// union_coarse_graphs[0].printGraph();
 	printf("Number of nodes = %d\n", union_coarse_graphs[0].numNodes());
+	
+	double start_time = omp_get_wtime();
 	map<int, int> parts = Uncoarsen(coarse_graphs[0][0], Bipartition(union_coarse_graphs[0]));
+	double time_taken = omp_get_wtime() - start_time;
+	cout << "\nTime taken (Bipartition) = " << time_taken << endl;
+
 	cout<<"mincut="<<EdgeCut(parts,coarse_graphs[0][0]) << endl;
 	
-	map<int,  std::vector<int>> :: iterator FCiter = Food_Chain.begin();
-	while(FCiter != Food_Chain.end())
-	{
-		printf("%d : ", FCiter->first);
-		for (int x : FCiter->second)
-		{
-			printf("%d ", x);
-		}
-		printf("\n");
-		FCiter++;
-	}
+	// map<int,  std::vector<int>> :: iterator FCiter = Food_Chain.begin();
+	// while(FCiter != Food_Chain.end())
+	// {
+	// 	printf("%d : ", FCiter->first);
+	// 	for (int x : FCiter->second)
+	// 	{
+	// 		printf("%d ", x);
+	// 	}
+	// 	printf("\n");
+	// 	FCiter++;
+	// }
 	// Project(parts,input.adjacency_list.size()); // vomit recursive till rhs is 0
 	return parts;
 }

@@ -23,7 +23,7 @@ int main() {
 	int num_edges;
 	string line;
 
-	ifstream myfile("input2.txt");
+	ifstream myfile("sample_test_file");
 	if (myfile.is_open())
 	{
 		myfile >> num_nodes;
