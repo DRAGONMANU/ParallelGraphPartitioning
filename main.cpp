@@ -18,11 +18,12 @@ extern map<int, int> Partition(Graph& input, int num_edges, int num_threads);
 int main() {
 	int num_threads = omp_get_num_procs();
 	printf("Num Threads = %d\n", num_threads);
+	num_threads = 1;
 	int num_nodes;
 	int num_edges;
 	string line;
 
-	ifstream myfile("sample_test_file");
+	ifstream myfile("input2.txt");
 	if (myfile.is_open())
 	{
 		myfile >> num_nodes;
