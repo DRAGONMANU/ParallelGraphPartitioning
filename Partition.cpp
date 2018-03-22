@@ -11,7 +11,13 @@
 using namespace std;;
 void print_2d_vec(vector<vector<int>> arr, int size);
 void print_vec(vector<int> arr, int size);
+map <int, vector<int>> Food_Chain;
 
+map <int, int> Uncoarsen(Graph g, map <int, int> partial_label)
+{
+
+	return partial_label;
+}
 int EdgeCut(map<int, int> labels,Graph graph)
 {
 	map<int, int> :: iterator itr = labels.begin();
@@ -35,7 +41,7 @@ int EdgeCut(map<int, int> labels,Graph graph)
 	return sum;
 }
 
-int STOPPING_CONDITION = 5;
+int STOPPING_CONDITION = 10;
 
 map<int, int> Bipartition(Graph graph)
 {
@@ -222,6 +228,7 @@ Graph FindMatching(Graph graph,int id,int chunk_size, int level_coarsening, int 
 						// Eating and being eaten
 						// TODO: Store the prey for each level using map
 						// map< int , map
+						Food_Chain[predator.id].push_back()
 						predator.food_chain.insert(pair <int, Node*> (level_coarsening, &prey));
 						prey.consumer = predator.id;
 						predator.weight += prey.weight;
@@ -298,7 +305,7 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 		int k_level = 0; // level of coarsening each processor does
 		while(k_level < STOPPING_CONDITION)
 		{
-		 	coarse_p.push_back(FindMatching(coarse_p[k_level], id, chunk_size, k_level, debug));
+		 	coarse_p[0] = (FindMatching(coarse_p[0], id, chunk_size, k_level, debug));
 		 	k_level++;
 		 	#pragma omp barrier
 		 	printf("Level = %d\n", k_level);
@@ -334,15 +341,16 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 	for (int x = 1; x < num_threads; x++)
 	{
 		// merging the adjacency lists of all the processors into processor 0
-		coarse_graphs[0][STOPPING_CONDITION].adjacency_list.insert(coarse_graphs[x][STOPPING_CONDITION].adjacency_list.begin(), coarse_graphs[x][STOPPING_CONDITION].adjacency_list.end());
+		coarse_graphs[0][0].adjacency_list.insert(coarse_graphs[x][0].adjacency_list.begin(), coarse_graphs[x][0].adjacency_list.end());
 	}
-	// printf("Union find\n");
-	// union_coarse_graphs.insert(pair <int, Graph> (STOPPING_CONDITION, updateEdges(coarse_graphs[0][STOPPING_CONDITION], STOPPING_CONDITION, 0, 0)));
-	// // union_coarse_graphs[STOPPING_CONDITION].printGraph();
-	// printf("Number of nodes = %d\n", union_coarse_graphs[STOPPING_CONDITION].numNodes());
-	map<int, int> parts = Bipartition(coarse_graphs[0][k_level-1]);
-	cout<<"mincut="<<EdgeCut(parts,coarse_graphs[0][k_level-1]);
+	printf("Union find\n");
+	union_coarse_graphs.insert(pair <int, Graph> (0, updateEdges(coarse_graphs[0][0], 0, 0, 0)));
+	// union_coarse_graphs[0].printGraph();
+	printf("Number of nodes = %d\n", union_coarse_graphs[0].numNodes());
+	// map<int, int> parts = Bipartition(coarse_graphs[0][0]);
+	// cout<<"mincut="<<EdgeCut(parts,coarse_graphs[0][0]);
 
+	map<int, int> parts;
 	// Project(parts,input.adjacency_list.size()); // vomit recursive till rhs is 0
 	return parts;
 }
