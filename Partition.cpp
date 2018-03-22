@@ -8,25 +8,43 @@
 #include <cstdlib>
 #include <list>
 #include <time.h>
+#include <algorithm>
+
 using namespace std;;
 void print_2d_vec(vector<vector<int>> arr, int size);
 void print_vec(vector<int> arr, int size);
+
+int STOPPING_CONDITION = 12;
+
 map <int, vector<int>> Food_Chain;
 
-map <int, int> Uncoarsen(Graph g, map <int, int> partial_label)
+map <int, int> Uncoarsen(Graph graph, map <int, int> partial_label)
 {
-
+	map<int,  tuple<Node,vector <Edge> > > :: iterator iter = graph.adjacency_list.begin();
+	while(iter != graph.adjacency_list.end())
+	{
+		Node& n = get<0>(iter->second);
+		if (partial_label.find(n.id) == partial_label.end()) // Partial label does not exist
+		{
+			partial_label[n.id] = partial_label[graph.findMasterPredator(n.id)];
+		}
+		iter++;
+	}
 	return partial_label;
 }
 int EdgeCut(map<int, int> labels,Graph graph)
 {
 	map<int, int> :: iterator itr = labels.begin();
 	int sum = 0;
+	int ones = 0;
 	while(itr != labels.end())
 	{
-		printf("%d\n",itr->second );		
+		// printf("%d\n",itr->second );		
 		if(itr->second==1)
+		{
+			ones++;
 			itr++;
+		}
 		else
 		{
 			vector <Edge> edges = get<1>(graph.adjacency_list[itr->first]);
@@ -38,179 +56,208 @@ int EdgeCut(map<int, int> labels,Graph graph)
 			itr++;
 		}
 	}
+	printf("ones is %d\n",ones );
 	return sum;
 }
 
-int STOPPING_CONDITION = 2;
-
-map<int, int> Bipartition(Graph graph)
+map<int, int> Bipartition(Graph graph,int num_threads)
 {
-	map<int, int> labels;
 	map<int,  tuple<Node,vector <Edge> > > :: iterator iter = graph.adjacency_list.begin();
 	int total_weight = 0;
 	while(iter != graph.adjacency_list.end())
 	{
-		labels.insert(pair < int, int> (iter->first,0));
 		total_weight += get<0>(iter->second).weight;
 		iter++;
 	}
 	cout<<"total="<<total_weight<<endl;
-	tuple<Node,vector <Edge>> startNode;
-	iter = graph.adjacency_list.begin();	
-	int temp = 0;
-	srand (time(NULL));
-	int id = rand() % graph.adjacency_list.size();
-	while(iter != graph.adjacency_list.end())
-	{
-		if(temp < id)
-			temp++;
-		else
-		{
-			startNode = iter->second;
-			break;
-		}
-		iter++;
-	}
 
-	printf("start = %d\n",get<0>(startNode).id);
-	// startNode = get<0>(graph.adjacency_list[id])
+	map<int,int> mincuts;
+	map<int, map<int,int> > parts;
 
-	list<int> queue;
-	queue.push_back(get<0>(startNode).id);
-	labels[get<0>(startNode).id] = 1;
-	int weight = 0;
-	
-	while(!queue.empty())
+	#pragma omp parallel num_threads(num_threads)
 	{
-		//printf("%d\n", weight);
-		int s = queue.front();
-		labels[s] = 1;
-		iter = graph.adjacency_list.begin();
-		weight = 0;
+		int id = omp_get_thread_num();
+		tuple<Node,vector <Edge>> startNode;
+		iter = graph.adjacency_list.begin();	
+		int temp = 0;
+		map<int, int> labels;
+		map<int,  tuple<Node,vector <Edge> > > :: iterator iter = graph.adjacency_list.begin();
 		while(iter != graph.adjacency_list.end())
 		{
-			if(labels[get<0>(iter->second).id]==1)
-				weight += get<0>(iter->second).weight;
+			labels.insert(pair < int, int> (iter->first,0));
 			iter++;
 		}
-		printf("%d\n", weight); 
-		if(weight>=0.5*total_weight)
-			break;
-		queue.pop_front();
-		for(unsigned int i = 0; i< get<1>(graph.adjacency_list[s]).size();i++)
+		srand (time(NULL));
+		int randomno = (rand()*id )% graph.adjacency_list.size();
+		iter = graph.adjacency_list.begin();
+		while(iter != graph.adjacency_list.end())
 		{
-			if(labels[get<1>(graph.adjacency_list[s])[i].n2]==0)
-				queue.push_back(get<1>(graph.adjacency_list[s])[i].n2);
+			if(temp < randomno)
+				temp++;
+			else
+			{
+				startNode = iter->second;
+				break;
+			}
+			iter++;
 		}
-	}
 
-	for (int ex = 0; ex < 50; ++ex)
+		// printf("start = %d\n",get<0>(startNode).id);
+		// startNode = get<0>(graph.adjacency_list[id])
+
+		list<int> queue;
+		queue.push_back(get<0>(startNode).id);
+		labels[get<0>(startNode).id] = 1;
+		int weight = 0;
+		
+		while(!queue.empty())
+		{
+			//printf("%d\n", weight);
+			int s = queue.front();
+			labels[s] = 1;
+			iter = graph.adjacency_list.begin();
+			weight = 0;
+			while(iter != graph.adjacency_list.end())
+			{
+				if(labels[get<0>(iter->second).id]==1)
+					weight += get<0>(iter->second).weight;
+				iter++;
+			}
+			// printf("%d\n", weight); 
+			if(weight>=0.5*total_weight)
+				break;
+			queue.pop_front();
+			for(unsigned int i = 0; i< get<1>(graph.adjacency_list[s]).size();i++)
+			{
+				if(labels[get<1>(graph.adjacency_list[s])[i].n2]==0)
+					queue.push_back(get<1>(graph.adjacency_list[s])[i].n2);
+			}
+		}
+
+		parts.insert(pair <int,map<int,int> >(id,labels));
+		mincuts.insert(pair <int,int>(id,EdgeCut(labels,graph)));
+	}
+	int min = mincuts[0];
+	int minid = 0;
+	map<int, int > :: iterator itr = mincuts.begin();
+	while(itr != mincuts.end())
 	{
-		printf("hell %d",ex);
-		int mincut = EdgeCut(labels,graph);
-		map<int, int> :: iterator itr = labels.begin();
-		int big = 0;
-		vector<int> gain(labels.size());
-
-		while(itr != labels.end())
-		{
-			int t=0;
-			for (int i = 0; i < get<1>(graph.adjacency_list[itr->first]).size(); ++i)
-			{
-				if(itr->second == 1)
-				{
-					if(labels[get<1>(graph.adjacency_list[itr->first])[i].n2]==0)
-						t+=get<1>(graph.adjacency_list[itr->first])[i].weight;
-					else
-						t-=get<1>(graph.adjacency_list[itr->first])[i].weight;
-				}
-				else
-				{
-					if(labels[get<1>(graph.adjacency_list[itr->first])[i].n2]==1)
-						t+=get<1>(graph.adjacency_list[itr->first])[i].weight;
-					else
-						t-=get<1>(graph.adjacency_list[itr->first])[i].weight;	
-				}
-			}
-			gain[itr->first] = t;
-
-			if(itr->second == 1)
-				big+=get<0>(graph.adjacency_list[itr->first]).weight;
-			if(itr->second == 0)
-				big-=get<0>(graph.adjacency_list[itr->first]).weight;
-			itr++;
+		printf("%d\n",itr->first);
+		if(min >= itr->second)
+		{	
+			min = itr->second;
+			minid = itr->first;
 		}
-
-		if(big>0)
-		{
-			int j=-1;
-			int maxi = 0;
-			for (int i = 0; i < gain.size(); ++i)
-			{
-				if(gain[i]>=maxi && labels[i]==0)
-				{
-					maxi = gain[i];
-					j=i;
-				}
-			}
-			labels[j] = 0;
-			if(mincut<EdgeCut(labels,graph))
-				labels[j]=1;
-		}
-		else if(big<0)
-		{
-			int j=-1;
-			int maxi = 0;
-			for (int i = 0; i < gain.size(); ++i)
-			{
-				if(gain[i]>=maxi && labels[i]==1)
-				{
-					maxi = gain[i];
-					j=i;
-				}
-			}
-			labels[j] = 1;
-			if(mincut<EdgeCut(labels,graph))
-				labels[j]=0;
-		}
-		else
-		{
-			int j1=-1;
-			int maxi = 0;
-			for (int i = 0; i < gain.size(); ++i)
-			{
-				if(gain[i]>=maxi && labels[i]==1)
-				{
-					maxi = gain[i];
-					j1=i;
-				}
-			}
-			labels[j1] = 0;
-			
-			int j2=-1;
-			maxi = 0;
-			for (int i = 0; i < gain.size(); ++i)
-			{
-				if(gain[i]>=maxi && labels[i]==0)
-				{
-					maxi = gain[i];
-					j2=i;
-				}
-			}
-			labels[j2] = 1;
-			
-
-			if(mincut<EdgeCut(labels,graph))
-			{
-				labels[j1]=1;
-				labels[j2]=0;
-			}
-
-		}
+		itr++;
 	}
-
-	return labels;
+	return parts[minid];
 }
+
+	// for (int ex = 0; ex < 50; ++ex)
+	// {
+	// 	printf("hell %d",ex);
+	// 	int mincut = EdgeCut(labels,graph);
+	// 	map<int, int> :: iterator itr = labels.begin();
+	// 	int big = 0;
+	// 	vector<int> gain(labels.size());
+
+	// 	while(itr != labels.end())
+	// 	{
+	// 		int t=0;
+	// 		for (int i = 0; i < get<1>(graph.adjacency_list[itr->first]).size(); ++i)
+	// 		{
+	// 			if(itr->second == 1)
+	// 			{
+	// 				if(labels[get<1>(graph.adjacency_list[itr->first])[i].n2]==0)
+	// 					t+=get<1>(graph.adjacency_list[itr->first])[i].weight;
+	// 				else
+	// 					t-=get<1>(graph.adjacency_list[itr->first])[i].weight;
+	// 			}
+	// 			else
+	// 			{
+	// 				if(labels[get<1>(graph.adjacency_list[itr->first])[i].n2]==1)
+	// 					t+=get<1>(graph.adjacency_list[itr->first])[i].weight;
+	// 				else
+	// 					t-=get<1>(graph.adjacency_list[itr->first])[i].weight;	
+	// 			}
+	// 		}
+	// 		gain[itr->first] = t;
+
+	// 		if(itr->second == 1)
+	// 			big+=get<0>(graph.adjacency_list[itr->first]).weight;
+	// 		if(itr->second == 0)
+	// 			big-=get<0>(graph.adjacency_list[itr->first]).weight;
+	// 		itr++;
+	// 	}
+
+	// 	if(big>0)
+	// 	{
+	// 		int j=-1;
+	// 		int maxi = 0;
+	// 		for (int i = 0; i < gain.size(); ++i)
+	// 		{
+	// 			if(gain[i]>=maxi && labels[i]==0)
+	// 			{
+	// 				maxi = gain[i];
+	// 				j=i;
+	// 			}
+	// 		}
+	// 		labels[j] = 0;
+	// 		if(mincut<EdgeCut(labels,graph))
+	// 			labels[j]=1;
+	// 	}
+	// 	else if(big<0)
+	// 	{
+	// 		int j=-1;
+	// 		int maxi = 0;
+	// 		for (int i = 0; i < gain.size(); ++i)
+	// 		{
+	// 			if(gain[i]>=maxi && labels[i]==1)
+	// 			{
+	// 				maxi = gain[i];
+	// 				j=i;
+	// 			}
+	// 		}
+	// 		labels[j] = 1;
+	// 		if(mincut<EdgeCut(labels,graph))
+	// 			labels[j]=0;
+	// 	}
+	// 	else
+	// 	{
+	// 		int j1=-1;
+	// 		int maxi = 0;
+	// 		for (int i = 0; i < gain.size(); ++i)
+	// 		{
+	// 			if(gain[i]>=maxi && labels[i]==1)
+	// 			{
+	// 				maxi = gain[i];
+	// 				j1=i;
+	// 			}
+	// 		}
+	// 		labels[j1] = 0;
+			
+	// 		int j2=-1;
+	// 		maxi = 0;
+	// 		for (int i = 0; i < gain.size(); ++i)
+	// 		{
+	// 			if(gain[i]>=maxi && labels[i]==0)
+	// 			{
+	// 				maxi = gain[i];
+	// 				j2=i;
+	// 			}
+	// 		}
+	// 		labels[j2] = 1;
+			
+
+	// 		if(mincut<EdgeCut(labels,graph))
+	// 		{
+	// 			labels[j1]=1;
+	// 			labels[j2]=0;
+	// 		}
+
+	// 	}
+	// }
+
 
 // mode = 1 , PARALLEL MODE store the old nodes
 // mode = 0 , UNION MODE do not store the old nodes
@@ -312,16 +359,26 @@ Graph FindMatching(Graph graph,int id,int chunk_size, int level_coarsening, int 
 	
 	while(iter != graph.adjacency_list.end())
 	{
+		vector<int> weights;
+		vector<int> pos;
 		for (unsigned int j = 0; j < get<1>(iter->second).size(); ++j)
 		{
-			// cout<<((get<1>(iter->second))[j]).n2;
+			weights.push_back((get<1>(iter->second))[j].weight);
+			pos.push_back(distance(weights.begin(), max_element(weights.begin(), weights.end())));
+			weights[j]=0;
+		}
+
+		for (int j : pos)
+		{
 			// Check whether node is inside the chunk or not
 			if(((get<1>(iter->second))[j]).n2 <= (id+1)*chunk_size && (get<1>(iter->second))[j].n2 > (id)*chunk_size)
 			{
-				Node& predator = get<0>(iter->second);
-				Node& prey = graph.getNode((get<1>(iter->second))[j].n2);
 				if(get<0>(iter->second).matched==0)
 				{		
+					Node& predator = get<0>(iter->second);
+					Node& prey = graph.getNode((get<1>(iter->second))[j].n2);
+					
+
 					if(prey.matched==0)
 					{
 						prey.matched = 1;
@@ -350,7 +407,7 @@ Graph FindMatching(Graph graph,int id,int chunk_size, int level_coarsening, int 
 		}
 		iter++;
 	}
-	// if(debug)
+	if(debug)
 	{
 		printf("matches\n");
 		for (unsigned int i = 0; i < matchings.size(); ++i)
@@ -369,7 +426,6 @@ Graph FindMatching(Graph graph,int id,int chunk_size, int level_coarsening, int 
 map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 {
 
-	int STOPPING_CONDITION = 5;
 	vector<Graph> breaks;
 	map<int, vector<Graph> > coarse_graphs;	//[proc][k_level]
 	map<int, Graph> union_coarse_graphs;	//[k_level]
@@ -448,14 +504,13 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 		// merging the adjacency lists of all the processors into processor 0
 		coarse_graphs[0][0].adjacency_list.insert(coarse_graphs[x][0].adjacency_list.begin(), coarse_graphs[x][0].adjacency_list.end());
 	}
-	printf("Union find\n");
+	// printf("Union find\n");
 	union_coarse_graphs.insert(pair <int, Graph> (0, updateEdges(coarse_graphs[0][0], 0, 0, 0)));
-	union_coarse_graphs[0].printGraph();
+	// union_coarse_graphs[0].printGraph();
 	printf("Number of nodes = %d\n", union_coarse_graphs[0].numNodes());
-	map<int, int> parts = Bipartition(union_coarse_graphs[0]);
-	// cout<<"\nmincut="<<EdgeCut(parts,union_coarse_graphs[0]);
-	
-	// map<int, int> parts;
+
+	map<int, int> parts = Uncoarsen(coarse_graphs[0][0], Bipartition(union_coarse_graphs[0],num_threads));
+	cout<<"mincut="<<EdgeCut(parts,coarse_graphs[0][0]) << endl;
 	return parts;
 }
 

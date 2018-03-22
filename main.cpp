@@ -16,14 +16,14 @@ using namespace std;
 extern map<int, int> Partition(Graph& input, int num_edges, int num_threads);
 
 int main() {
-	int num_threads = omp_get_num_procs();
+	// int num_threads = omp_get_num_procs();
+	int num_threads = 2;
 	printf("Num Threads = %d\n", num_threads);
-	num_threads = 1;
 	int num_nodes;
 	int num_edges;
 	string line;
 
-	ifstream myfile("input2.txt");
+	ifstream myfile("sample_test_file");
 	if (myfile.is_open())
 	{
 		myfile >> num_nodes;
