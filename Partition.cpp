@@ -35,6 +35,7 @@ int EdgeCut(map<int, int> labels,Graph graph)
 	return sum;
 }
 
+int STOPPING_CONDITION = 5;
 
 map<int, int> Bipartition(Graph graph)
 {
@@ -102,7 +103,9 @@ map<int, int> Bipartition(Graph graph)
 	return labels;
 }
 
-Graph updateEdges(Graph& graph, int level_coarsening, int debug)
+// mode = 1 , PARALLEL MODE store the old nodes
+// mode = 0 , UNION MODE do not store the old nodes
+Graph updateEdges(Graph& graph, int level_coarsening, int mode, int debug) 
 {
 	Graph new_graph = *(new Graph());
 	if (debug)
@@ -125,16 +128,26 @@ Graph updateEdges(Graph& graph, int level_coarsening, int debug)
 		}
 		
 
-		Node new_n = *(new Node(old_n.id));
-		new_n.weight = old_n.weight;
 		vector<Edge> new_neighbours;
-		new_graph.createAdjacencyList2(new_n, new_neighbours);
 
-		if(old_n.consumer != nullptr) // If consumed then don't add the node to the new graph
+		if(old_n.consumer != -1) // If consumed then don't add the node to the new graph
 		{
+			if (mode == 0)
+			{
+				iter++;
+				continue;
+			}
+			// We store the old node so that we can keep track of the consumer of the prey
+			Node new_n = old_n;
+			new_graph.createAdjacencyList2(new_n, new_neighbours);
 			iter++;
 			continue;
 		}
+
+		Node new_n = *(new Node(old_n.id));
+		new_n.weight = old_n.weight;
+		new_graph.createAdjacencyList2(new_n, new_neighbours);
+
 
 		// inserting the edges of the original node
 		if (debug) printf("PRINTING EDGES\n");
@@ -150,6 +163,13 @@ Graph updateEdges(Graph& graph, int level_coarsening, int debug)
 		{
 			// graph.printGraph();
 		}
+
+		if (mode == 0)
+		{
+			iter++;
+			continue;
+		}
+
 		if (old_n.preyExists(level_coarsening))
 		{
 			int prey_id = old_n.food_chain[level_coarsening]->id;
@@ -204,7 +224,7 @@ Graph FindMatching(Graph graph,int id,int chunk_size, int level_coarsening, int 
 						// TODO: Store the prey for each level using map
 						// map< int , map
 						predator.food_chain.insert(pair <int, Node*> (level_coarsening, &prey));
-						prey.consumer = &predator;
+						prey.consumer = predator.id;
 						predator.weight += prey.weight;
 						
 						// Transfer the adjacency list
@@ -229,7 +249,7 @@ Graph FindMatching(Graph graph,int id,int chunk_size, int level_coarsening, int 
 			printf("%d - %d\n", get<0>(matchings[i]).id,get<1>(matchings[i]).id);
 		}
 	}
-	Graph new_graph = updateEdges(graph, level_coarsening, debug);
+	Graph new_graph = updateEdges(graph, level_coarsening, 1, debug);
 	// printf("++++++\n");
 	// new_graph.printGraph();
 	// printf("@+++++\n");
@@ -241,14 +261,13 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 {
 	vector<Graph> breaks;
 	map<int, vector<Graph> > coarse_graphs;	//[proc][k_level]
+	map<int, Graph> union_coarse_graphs;	//[k_level]
 
 	for (int i = 0; i < num_threads; ++i)
 	{
 		breaks.push_back(*new Graph());
 	}
 	omp_set_num_threads(num_threads);
-	
-	int k_level = 0; // level of coarsening each processor does
 	
 	#pragma omp parallel num_threads(num_threads)
 	{
@@ -258,7 +277,7 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 		int debug = 0;
 		if(id == 0) 
 		{	
-			debug = 0	;
+			debug = 0;
 		}
 
 		if(id < num_threads-1)
@@ -277,32 +296,37 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 		}
 		vector<Graph> coarse_p;
 		coarse_p.push_back(breaks[id]);
-		do 
+		int k_level = 0; // level of coarsening each processor does
+		while(k_level < STOPPING_CONDITION)
 		{
 		 	coarse_p.push_back(FindMatching(coarse_p[k_level], id, chunk_size, k_level, debug));
 		 	k_level++;
 		 	#pragma omp barrier
 		}
 		// TODO: Set a stopping condition which is consistent with all the threads
-		while(k_level < 2);
 		
 		#pragma omp critical
 		{
 			coarse_graphs.insert(pair <int, vector<Graph> > (id, coarse_p));	
 		}
-		// Graph coarse_graph = Union(breaks);
+		
 
 		// map<int, int> parts = Bipartition(coarse_graphs[id][k_level],0);
 	}
 	// {paralled ends}
-	for (int y = 0; y < k_level; y++)
-	{
-		for (int x = 0; x < num_threads; x++)
-		{
-			printf("\n%d ---- %d \n", x, y);
-			coarse_graphs[x][y].printGraph();
 
+	for (int y = 1; y <= STOPPING_CONDITION; y++)
+	{
+		for (int x = 1; x < num_threads; x++)
+		{
+			// merging the adjacency lists of all the processors into processor 0
+			coarse_graphs[0][y].adjacency_list.insert(coarse_graphs[x][y].adjacency_list.begin(), coarse_graphs[x][y].adjacency_list.end());
 		}
+		// printf("\n%d ----\n", y);
+		// coarse_graphs[0][y].printGraph();
+		printf("\n%d Updated ----\n", y);
+		union_coarse_graphs.insert(pair <int, Graph> (y, updateEdges(coarse_graphs[0][y], y, 0, 0)));
+		union_coarse_graphs[y].printGraph();
 	}
 	map<int, int> parts = Bipartition(coarse_graphs[0][k_level-1]);
 	cout<<"mincut="<<EdgeCut(parts,coarse_graphs[0][k_level-1]);

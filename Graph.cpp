@@ -37,7 +37,7 @@ class Node
 	int weight;
 	int matched;
 	map<int, Node*> food_chain;
-	Node* consumer;
+	int consumer;
 	vector<Edge> neighbours;
 	vector<Edge> external_edges;
 	
@@ -45,13 +45,13 @@ class Node
 		id = -1;
 		weight = 1;
 		matched = 0;
-		consumer = nullptr;
+		consumer = -1;
 	}
 	Node(int id1) {
 		id = id1;
 		weight = 1;
 		matched = 0;
-		consumer = nullptr;
+		consumer = -1;
 	}
 
 
@@ -62,7 +62,7 @@ class Node
 
 	int predatorExists()
 	{
-		if (consumer == nullptr)
+		if (consumer == -1)
 		{
 			return 0;
 		}	
@@ -131,7 +131,8 @@ public:
 			Node& node2 = getNode(node2_id);
 			if(node2.predatorExists() > 0)
 			{
-				mod_e.n2 = (node2.consumer)->id;
+				mod_e.n2 = node2.consumer;
+				mod_e = modifyEdgeWithParent(mod_e);
 			}
 		}
 		return mod_e;
@@ -173,10 +174,10 @@ public:
 			// 	printf("(F - %d)", get<0>(itr->second).food->id);
 			// }
 
-			// if (get<0>(itr->second).consumer != nullptr) // Consumer Exists
-			// {
-			// 	printf(" (C - %d)", get<0>(itr->second).consumer->id);
-			// }
+			if (get<0>(itr->second).consumer != -1) // Consumer Exists
+			{
+				printf(" (C - %d)", get<0>(itr->second).consumer);
+			}
 			printf("\t");
 			for (unsigned int j = 0; j < get<1>(itr->second).size(); j++ )
 			{
