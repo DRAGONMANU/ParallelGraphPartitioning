@@ -11,7 +11,9 @@
 using namespace std;;
 void print_2d_vec(vector<vector<int>> arr, int size);
 void print_vec(vector<int> arr, int size);
-int STOPPING_CONDITION = 5;
+
+int STOPPING_CONDITION = 6;
+
 map<int, int> Bipartition(Graph graph, int id)
 {
 	map<int, int> labels;
@@ -25,7 +27,7 @@ map<int, int> Bipartition(Graph graph, int id)
 	}
 	cout<<"total="<<total_weight<<endl;
 	tuple<Node,vector <Edge>> startNode;
-	iter = graph.adjacency_list.begin();
+	iter = graph.adjacency_list.begin();	
 	int temp = 0;
 	id = rand() % graph.adjacency_list.size();
 	while(iter != graph.adjacency_list.end())
@@ -101,7 +103,6 @@ Graph updateEdges(Graph& graph, int level_coarsening, int mode, int debug)
 
 		}
 		
-
 		vector<Edge> new_neighbours;
 
 		if(old_n.consumer != -1) // If consumed then don't add the node to the new graph
@@ -276,6 +277,7 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 		 	coarse_p.push_back(FindMatching(coarse_p[k_level], id, chunk_size, k_level, debug));
 		 	k_level++;
 		 	#pragma omp barrier
+		 	printf("Level = %d\n", k_level);
 		}
 		// TODO: Set a stopping condition which is consistent with all the threads
 		
@@ -289,22 +291,32 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 	}
 	// {paralled ends}
 
-	for (int y = 1; y <= STOPPING_CONDITION; y++)
+	// Find union of pralllel graphs 
+
+	// for (int y = 1; y <= STOPPING_CONDITION; y++)
+	// {
+	// 	for (int x = 1; x < num_threads; x++)
+	// 	{
+	// 		// merging the adjacency lists of all the processors into processor 0
+	// 		coarse_graphs[0][y].adjacency_list.insert(coarse_graphs[x][y].adjacency_list.begin(), coarse_graphs[x][y].adjacency_list.end());
+	// 	}
+	// 	// printf("\n%d ----\n", y);
+	// 	// coarse_graphs[0][y].printGraph();
+	// 	printf("\n%d Updated ----\n", y);
+	// 	union_coarse_graphs.insert(pair <int, Graph> (y, updateEdges(coarse_graphs[0][y], y, 0, 0)));
+	// 	union_coarse_graphs[y].printGraph();
+	// }
+
+	for (int x = 1; x < num_threads; x++)
 	{
-		for (int x = 1; x < num_threads; x++)
-		{
-			// merging the adjacency lists of all the processors into processor 0
-			coarse_graphs[0][y].adjacency_list.insert(coarse_graphs[x][y].adjacency_list.begin(), coarse_graphs[x][y].adjacency_list.end());
-		}
-		// printf("\n%d ----\n", y);
-		// coarse_graphs[0][y].printGraph();
-		printf("\n%d Updated ----\n", y);
-		union_coarse_graphs.insert(pair <int, Graph> (y, updateEdges(coarse_graphs[0][y], y, 0, 0)));
-		union_coarse_graphs[y].printGraph();
+		// merging the adjacency lists of all the processors into processor 0
+		coarse_graphs[0][STOPPING_CONDITION].adjacency_list.insert(coarse_graphs[x][STOPPING_CONDITION].adjacency_list.begin(), coarse_graphs[x][STOPPING_CONDITION].adjacency_list.end());
 	}
 
-
-	// TODO: Find union of pralllel graphs 
+	// printf("Union find\n");
+	// union_coarse_graphs.insert(pair <int, Graph> (STOPPING_CONDITION, updateEdges(coarse_graphs[0][STOPPING_CONDITION], STOPPING_CONDITION, 0, 0)));
+	// // union_coarse_graphs[STOPPING_CONDITION].printGraph();
+	// printf("Number of nodes = %d\n", union_coarse_graphs[STOPPING_CONDITION].numNodes());
 
 	map<int, int> parts;
 	// Project(parts,input.adjacency_list.size()); // vomit recursive till rhs is 0

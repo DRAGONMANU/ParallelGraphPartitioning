@@ -16,12 +16,13 @@ using namespace std;
 extern map<int, int> Partition(Graph& input, int num_edges, int num_threads);
 
 int main() {
-	int num_threads = 2;
+	int num_threads = omp_get_num_procs();
+	printf("Num Threads = %d\n", num_threads);
 	int num_nodes;
 	int num_edges;
 	string line;
 
-	ifstream myfile("input2.txt");
+	ifstream myfile("sample_test_file");
 	if (myfile.is_open())
 	{
 		myfile >> num_nodes;
@@ -42,8 +43,8 @@ int main() {
 			getline(myfile, line);
 			istringstream is(line);
 			vector<int> v((istream_iterator<int>(is)), istream_iterator<int>());
-			for (int x : v) std::cout << x << ' ';
-			std::cout << std::endl;
+			// for (int x : v) std::cout << x << ' ';
+			// std::cout << std::endl;
 			std::vector<Edge> ve;
 			for (unsigned int i = 0; i < v.size(); i++)
 			{

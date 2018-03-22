@@ -1,8 +1,8 @@
 all:
-	g++ -std=c++11 -fopenmp -Wall main.cpp -o main
+	g++ -std=c++11 -fopenmp -Wall -O2 main.cpp -o main
 
 Graph: 
-	g++ -std=c++11 -fopenmp -Wall Graph.cpp -o Graph
+	g++ -std=c++11 -fopenmp -Wall -O2 Graph.cpp -o Graph
 
 Partition:
-	g++ -std=c++11 -fopenmp -Wall Partition.cpp -o Partition
+	g++ -std=c++11 -fopenmp -Wall -O2 Partition.cpp -o Partition
