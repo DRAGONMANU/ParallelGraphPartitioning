@@ -15,15 +15,16 @@ using namespace std;
 
 extern map<int, int> Partition(Graph& input, int num_edges, int num_threads);
 
-int main() {
+int main(int argc, char* argv[]) {
 	// int num_threads = omp_get_num_procs();
-	int num_threads = 2;
+	int num_threads = 4;
 	printf("Num Threads = %d\n", num_threads);
 	int num_nodes;
 	int num_edges;
 	string line;
 
-	ifstream myfile("sample_test_file");
+
+	ifstream myfile(argv[1]);
 	if (myfile.is_open())
 	{
 		myfile >> num_nodes;
@@ -70,5 +71,13 @@ int main() {
 	// Printing stats and results
 	cout << "\nTime taken = " << time_taken << endl;
 
+	ofstream outfile(argv[2]);
+	if(outfile.is_open())
+	{
+		for (int i = 0; i < num_nodes; i++)
+		{
+			outfile << parts[i] << " ";
+		}
+	}
 	return 0;
 }

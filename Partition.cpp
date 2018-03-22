@@ -56,11 +56,12 @@ int EdgeCut(map<int, int> labels,Graph graph)
 			itr++;
 		}
 	}
-	printf("ones is %d\n",ones );
+	// printf("ones is %d\n",ones );
 	return sum;
 }
 
 map<int, int> Bipartition(Graph graph,int num_threads)
+
 {
 	map<int,  tuple<Node,vector <Edge> > > :: iterator iter = graph.adjacency_list.begin();
 	int total_weight = 0;
@@ -101,7 +102,6 @@ map<int, int> Bipartition(Graph graph,int num_threads)
 			}
 			iter++;
 		}
-
 		// printf("start = %d\n",get<0>(startNode).id);
 		// startNode = get<0>(graph.adjacency_list[id])
 
@@ -142,7 +142,7 @@ map<int, int> Bipartition(Graph graph,int num_threads)
 	map<int, int > :: iterator itr = mincuts.begin();
 	while(itr != mincuts.end())
 	{
-		printf("%d\n",itr->first);
+		// printf("%d\n",itr->first);
 		if(min >= itr->second)
 		{	
 			min = itr->second;
@@ -152,8 +152,6 @@ map<int, int> Bipartition(Graph graph,int num_threads)
 	}
 	return parts[minid];
 }
-
-	// for (int ex = 0; ex < 50; ++ex)
 	// {
 	// 	printf("hell %d",ex);
 	// 	int mincut = EdgeCut(labels,graph);
@@ -470,6 +468,10 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 		 	k_level++;
 		 	#pragma omp barrier
 		 	printf("Level = %d\n", k_level);
+		 	#pragma omp single
+		 	{
+
+		 	}
 		}
 		// TODO: Set a stopping condition which is consistent with all the threads
 		
@@ -508,9 +510,26 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 	union_coarse_graphs.insert(pair <int, Graph> (0, updateEdges(coarse_graphs[0][0], 0, 0, 0)));
 	// union_coarse_graphs[0].printGraph();
 	printf("Number of nodes = %d\n", union_coarse_graphs[0].numNodes());
-
+	
+	double start_time = omp_get_wtime();
 	map<int, int> parts = Uncoarsen(coarse_graphs[0][0], Bipartition(union_coarse_graphs[0],num_threads));
+	double time_taken = omp_get_wtime() - start_time;
+	cout << "\nTime taken (Bipartition) = " << time_taken << endl;
+
 	cout<<"mincut="<<EdgeCut(parts,coarse_graphs[0][0]) << endl;
+	
+	// map<int,  std::vector<int>> :: iterator FCiter = Food_Chain.begin();
+	// while(FCiter != Food_Chain.end())
+	// {
+	// 	printf("%d : ", FCiter->first);
+	// 	for (int x : FCiter->second)
+	// 	{
+	// 		printf("%d ", x);
+	// 	}
+	// 	printf("\n");
+	// 	FCiter++;
+	// }
+	// Project(parts,input.adjacency_list.size()); // vomit recursive till rhs is 0
 	return parts;
 }
 
