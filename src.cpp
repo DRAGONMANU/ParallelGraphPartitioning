@@ -52,14 +52,8 @@ int main(int argc, char *argv[]) {
 	{
 		for (std::vector<int>::iterator it=myvector.begin(); it!=myvector.end(); ++it)
 	   	{
-		    outfile << *it << "\n";
-			if(*it==0)
-				zeros++;
-			else
-				ones++;
+		    outfile << *it << " ";
 		}
 	}
-	cout<<zeros<<endl;
-	cout<<ones<<endl;
 	return 0;
 }

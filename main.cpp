@@ -31,7 +31,7 @@ int main() {
 
 	printf("num edge = %d num nodes = %d\n", num_edges, num_nodes);
 
-	// vector<vector<int>> input(num_nodes);
+	// vector<vector<int> > input(num_nodes);
 	// vector<int> output;
 	
 	Graph input_graph = *(new Graph());
