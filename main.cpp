@@ -16,7 +16,9 @@ using namespace std;
 extern map<int, int> Partition(Graph& input, int num_edges, int num_threads);
 
 int main() {
-	int num_threads = 1;
+	int num_threads = omp_get_num_procs();
+	printf("%d\n",num_threads);
+	num_threads = 2;
 	int num_nodes;
 	int num_edges;
 	string line;

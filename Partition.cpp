@@ -35,7 +35,7 @@ int EdgeCut(map<int, int> labels,Graph graph)
 	return sum;
 }
 
-int STOPPING_CONDITION = 5;
+
 
 map<int, int> Bipartition(Graph graph)
 {
@@ -94,12 +94,77 @@ map<int, int> Bipartition(Graph graph)
 				queue.push_back(get<1>(graph.adjacency_list[s])[i].n2);
 		}
 	}
-	map<int, int> :: iterator itr = labels.begin();
-	while(itr != labels.end())
+
+	for (int ex = 0; ex < 50; ++ex)
 	{
-		printf("%d %d\n", itr->first, itr->second);
-		itr++;
+		int mincut = EdgeCut(labels,graph);
+		map<int, int> :: iterator itr = labels.begin();
+		int big = 0;
+		vector<int> gain(labels.size());
+
+		while(itr != labels.end())
+		{
+			int t=0;
+			for (int i = 0; i < get<1>(graph.adjacency_list[itr->first]).size(); ++i)
+			{
+				if(itr->second == 1)
+				{
+					if(labels[get<1>(graph.adjacency_list[itr->first])[i].n2]==0)
+						t+=get<1>(graph.adjacency_list[itr->first])[i].weight;
+					else
+						t-=get<1>(graph.adjacency_list[itr->first])[i].weight;
+				}
+				else
+				{
+					if(labels[get<1>(graph.adjacency_list[itr->first])[i].n2]==1)
+						t+=get<1>(graph.adjacency_list[itr->first])[i].weight;
+					else
+						t-=get<1>(graph.adjacency_list[itr->first])[i].weight;	
+				}
+			}
+			gain[itr->first] = t;
+
+			if(itr->second == 1)
+				big++;
+			if(itr->second == 0)
+				big--;
+			itr++;
+		}
+
+		if(big>=0)
+		{
+			int j=-1;
+			int max = 0;
+			for (int i = 0; i < gain.size(); ++i)
+			{
+				if(gain[i]>=max && labels[i]==0)
+				{
+					max = gain[i];
+					j=i;
+				}
+			}
+			labels[j] = 0;
+			if(mincut<EdgeCut(labels,graph))
+				labels[j]=1;
+		}
+		else
+		{
+			int j=-1;
+			int max = 0;
+			for (int i = 0; i < gain.size(); ++i)
+			{
+				if(gain[i]>=max && labels[i]==1)
+				{
+					max = gain[i];
+					j=i;
+				}
+			}
+			labels[j] = 1;
+			if(mincut<EdgeCut(labels,graph))
+				labels[j]=0;
+		}
 	}
+
 	return labels;
 }
 
@@ -259,6 +324,8 @@ Graph FindMatching(Graph graph,int id,int chunk_size, int level_coarsening, int 
 
 map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 {
+
+	int STOPPING_CONDITION = 5;
 	vector<Graph> breaks;
 	map<int, vector<Graph> > coarse_graphs;	//[proc][k_level]
 	map<int, Graph> union_coarse_graphs;	//[k_level]
@@ -328,8 +395,8 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 		union_coarse_graphs.insert(pair <int, Graph> (y, updateEdges(coarse_graphs[0][y], y, 0, 0)));
 		union_coarse_graphs[y].printGraph();
 	}
-	map<int, int> parts = Bipartition(coarse_graphs[0][k_level-1]);
-	cout<<"mincut="<<EdgeCut(parts,coarse_graphs[0][k_level-1]);
+	map<int, int> parts = Bipartition(coarse_graphs[0][0]);
+	cout<<"mincut="<<EdgeCut(parts,coarse_graphs[0][0]);
 	// TODO: Find union of pralllel graphs 
 
 	// map<int, int> parts;
