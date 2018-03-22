@@ -228,7 +228,7 @@ Graph FindMatching(Graph graph,int id,int chunk_size, int level_coarsening, int 
 						// Eating and being eaten
 						// TODO: Store the prey for each level using map
 						// map< int , map
-						Food_Chain[predator.id].push_back()
+						Food_Chain[predator.id].push_back(prey.id);
 						predator.food_chain.insert(pair <int, Node*> (level_coarsening, &prey));
 						prey.consumer = predator.id;
 						predator.weight += prey.weight;
@@ -247,7 +247,7 @@ Graph FindMatching(Graph graph,int id,int chunk_size, int level_coarsening, int 
 		}
 		iter++;
 	}
-	if(debug)
+	// if(debug)
 	{
 		printf("matches\n");
 		for (unsigned int i = 0; i < matchings.size(); ++i)
@@ -345,11 +345,19 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 	}
 	printf("Union find\n");
 	union_coarse_graphs.insert(pair <int, Graph> (0, updateEdges(coarse_graphs[0][0], 0, 0, 0)));
-	// union_coarse_graphs[0].printGraph();
+	union_coarse_graphs[0].printGraph();
 	printf("Number of nodes = %d\n", union_coarse_graphs[0].numNodes());
 	// map<int, int> parts = Bipartition(coarse_graphs[0][0]);
 	// cout<<"mincut="<<EdgeCut(parts,coarse_graphs[0][0]);
-
+	for (unsigned int i = 1; i < Food_Chain.size(); i++)
+	{
+		printf("%d : ", i);
+		for (int x : Food_Chain[i])
+		{
+			printf("%d ", x);
+		}
+		printf("\n");
+	}
 	map<int, int> parts;
 	// Project(parts,input.adjacency_list.size()); // vomit recursive till rhs is 0
 	return parts;
