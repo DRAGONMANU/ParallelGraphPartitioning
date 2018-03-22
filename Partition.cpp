@@ -98,16 +98,18 @@ Graph updateEdges(Graph& graph, int level_coarsening, int debug)
 			new_graph.printGraph();
 
 		}
-		if(old_n.consumer != nullptr) // If consumed then don't add the node to the new graph
-		{
-			iter++;
-			continue;
-		}
+		
 
 		Node new_n = *(new Node(old_n.id));
 		new_n.weight = old_n.weight;
 		vector<Edge> new_neighbours;
 		new_graph.createAdjacencyList2(new_n, new_neighbours);
+
+		if(old_n.consumer != nullptr) // If consumed then don't add the node to the new graph
+		{
+			iter++;
+			continue;
+		}
 
 		// inserting the edges of the original node
 		if (debug) printf("PRINTING EDGES\n");
@@ -221,6 +223,8 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 	}
 	omp_set_num_threads(num_threads);
 	
+	int k_level = 0; // level of coarsening each processor does
+	
 	#pragma omp parallel num_threads(num_threads)
 	{
 
@@ -229,15 +233,13 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 		int debug = 0;
 		if(id == 0) 
 		{	
-			debug = 0;
+			debug = 0	;
 		}
 
 		if(id < num_threads-1)
 		{ 
 			for(int i=id*chunk_size;i<(id+1)*chunk_size;i++)
 			{
-				//TODO change this function
-				
 				breaks[id].createAdjacencyList(i+1,get<1>(input.adjacency_list[i+1]));
 			}
 		}
@@ -245,20 +247,19 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 		{
 			for (unsigned int i = id*chunk_size; i < input.adjacency_list.size(); ++i)
 			{
-				//TODO change this function
 				breaks[id].createAdjacencyList(i+1,get<1>(input.adjacency_list[i+1]));
-
 			}
 		}
 		vector<Graph> coarse_p;
 		coarse_p.push_back(breaks[id]);
-		int k_level = 0;
 		do 
 		{
 		 	coarse_p.push_back(FindMatching(coarse_p[k_level], id, chunk_size, k_level, debug));
 		 	k_level++;
 		 	#pragma omp barrier
-		}while(k_level < 2);
+		}
+		// TODO: Set a stopping condition which is consistent with all the threads
+		while(k_level < 2);
 		
 		#pragma omp critical
 		{
@@ -269,14 +270,16 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 		// map<int, int> parts = Bipartition(coarse_graphs[id][k_level],0);
 	}
 	// {paralled ends}
-	for (int x = 0; x < num_threads; x++)
-	{	for (int y = 0; y < 3; y++)
+	for (int y = 0; y < 3; y++)
+	{
+		for (int x = 0; x < num_threads; x++)
 		{
 			printf("\n%d ---- %d \n", x, y);
 			coarse_graphs[x][y].printGraph();
+
 		}
 	}
-	// Find union of pralllel graojsafl
+	// TODO: Find union of pralllel graphs 
 
 	map<int, int> parts;
 	// Project(parts,input.adjacency_list.size()); // vomit recursive till rhs is 0
