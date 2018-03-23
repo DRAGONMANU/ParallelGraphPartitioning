@@ -11,12 +11,20 @@
 #include "Graph.cpp"
 #include "Partition.cpp"
 #include <map>
+#include <algorithm>
+
 using namespace std;
 
-extern map<int, int> Partition(Graph& input, int num_edges, int num_threads);
+extern map<int, int> Partition(Graph& input, int num_threads, int k);
 
 int main(int argc, char* argv[]) {
 	// int num_threads = omp_get_num_procs();
+	
+	if(argc!=4)
+	{
+		cout<<"\nerror in argument";
+		return 0;
+	}
 	int num_threads = 4;
 	printf("Num Threads = %d\n", num_threads);
 	int num_nodes;
@@ -65,19 +73,39 @@ int main(int argc, char* argv[]) {
 	}
 	//input_graph.printGraph();
 	double start_time = omp_get_wtime();
+	int k =atoi(argv[3]);
 	// printf("input size = %d\n", input.size());
-	map<int, int> parts = Partition(input_graph, num_edges, num_threads);
+	map<int, int> parts = Partition(input_graph, num_threads,k);
 	double time_taken = omp_get_wtime() - start_time;
 	// Printing stats and results
 	cout << "\nTime taken = " << time_taken << endl;
-
+	printf("Parts size = %d\n", (int)parts.size());
+	cout << "mincut=" << EdgeCut(parts,input_graph) << endl;
+	map<int,int> :: iterator itera = parts.begin();
 	ofstream outfile(argv[2]);
+	
+	map<int,int> distri;
 	if(outfile.is_open())
 	{
-		for (int i = 1; i <= (int)(parts.size()); i++)
+		itera = parts.begin();
+		while(itera!=parts.end())
 		{
-			outfile << parts[i] << " ";
+			if(distri.find(itera->second)!=distri.end())
+				distri[itera->second]++;
+			else
+				distri.insert(pair<int,int>(itera->second,1));
+			outfile << itera->second << " ";
+			itera++;
 		}
+		// cout<<ones;
 	}
+
+	itera = distri.begin();
+	while(itera!=distri.end())
+	{
+		printf("%d -> %d\n",itera->first, itera->second);
+		itera++;
+	}
+
 	return 0;
 }

@@ -14,7 +14,7 @@ using namespace std;;
 void print_2d_vec(vector<vector<int>> arr, int size);
 void print_vec(vector<int> arr, int size);
 
-int STOPPING_CONDITION = 12;
+int STOPPING_CONDITION = 10;
 
 map <int, vector<int>> Food_Chain;
 
@@ -36,28 +36,20 @@ int EdgeCut(map<int, int> labels,Graph graph)
 {
 	map<int, int> :: iterator itr = labels.begin();
 	int sum = 0;
-	int ones = 0;
 	while(itr != labels.end())
 	{
-		// printf("%d\n",itr->second );		
-		if(itr->second==1)
+		// printf("%d\n",itr->second );			
+		vector <Edge> edges = get<1>(graph.adjacency_list[itr->first]);
+		for(Edge e : edges)
 		{
-			ones++;
-			itr++;
+			if(labels[e.n2] != itr->second)
+				sum += e.weight; 
 		}
-		else
-		{
-			vector <Edge> edges = get<1>(graph.adjacency_list[itr->first]);
-			for(Edge e : edges)
-			{
-				if(labels[e.n2] == 1)
-					sum += e.weight; 
-			}
-			itr++;
-		}
+		itr++;
+	
 	}
 	// printf("ones is %d\n",ones );
-	return sum;
+	return sum / 2;
 }
 
 vector<Graph> divideGraph(Graph graph, map<int, int> labels)
@@ -66,31 +58,29 @@ vector<Graph> divideGraph(Graph graph, map<int, int> labels)
 	vector<Graph> out;
 	out.push_back(*(new Graph())); // first graph 
 	out.push_back(*(new Graph())); // second graph
+	// printf("asdsad\n");
 	while(iter != graph.adjacency_list.end())
 	{
 		Node node = get<0>(iter->second);
 		Graph& g = out[labels[node.id]];
-		for (Edge e : get<1>(iter->second))
-		{
-			if((int)(labels[e.n2] != 0))
-			{
-				continue;
-			}
-			e.printEdge();
-			if (not g.NodeExists(node.id))
+		if (not g.NodeExists(node.id))
 			{
 				vector<Edge> ve;
-				g.createAdjacencyList2(node, ve);
+				g.createAdjacencyList(node.id, ve);
+		}
+		for (Edge e : get<1>(iter->second))
+		{
+			// e.printEdge();
+			if((int)(labels[e.n2] != labels[node.id]))
+			{
+				continue;
 			}
 			g.getEdges(node.id).push_back(e);
 
 		}
-		printf("\n");
+		// printf("\n");
 		iter++;
 	}
-	printf("division bell - Pink Floyd\n");
-	out[0].printGraph();
-	out[1].printGraph();
 	return out;
 }
 
@@ -103,69 +93,76 @@ map<int, int> Bipartition(Graph graph,int num_threads)
 		total_weight += get<0>(iter->second).weight;
 		iter++;
 	}
-	cout<<"total="<<total_weight<<endl;
+	// cout<<"total="<<total_weight<<endl;
 
 	map<int,int> mincuts;
 	map<int, map<int,int> > parts;
 
 	#pragma omp parallel num_threads(num_threads)
 	{
-		int id = omp_get_thread_num();
-		tuple<Node,vector <Edge>> startNode;
-		iter = graph.adjacency_list.begin();	
-		int temp = 0;
 		map<int, int> labels;
-		map<int,  tuple<Node,vector <Edge> > > :: iterator iter = graph.adjacency_list.begin();
-		while(iter != graph.adjacency_list.end())
-		{
-			labels.insert(pair < int, int> (iter->first,0));
-			iter++;
-		}
-		srand (time(NULL));
-		int randomno = (rand()*id )% graph.adjacency_list.size();
-		iter = graph.adjacency_list.begin();
-		while(iter != graph.adjacency_list.end())
-		{
-			if(temp < randomno)
-				temp++;
-			else
-			{
-				startNode = iter->second;
-				break;
-			}
-			iter++;
-		}
-		// printf("start = %d\n",get<0>(startNode).id);
-		// startNode = get<0>(graph.adjacency_list[id])
-
-		list<int> queue;
-		queue.push_back(get<0>(startNode).id);
-		labels[get<0>(startNode).id] = 1;
 		int weight = 0;
-		
-		while(!queue.empty())
+		int id = omp_get_thread_num();
+		do
 		{
-			//printf("%d\n", weight);
-			int s = queue.front();
-			labels[s] = 1;
-			iter = graph.adjacency_list.begin();
 			weight = 0;
+			tuple<Node,vector <Edge>> startNode;
+			iter = graph.adjacency_list.begin();	
+			int temp = 0;
+			map<int,  tuple<Node,vector <Edge> > > :: iterator iter = graph.adjacency_list.begin();
+			labels = *(new map<int, int>);
 			while(iter != graph.adjacency_list.end())
 			{
-				if(labels[get<0>(iter->second).id]==1)
-					weight += get<0>(iter->second).weight;
+				labels.insert(pair < int, int> (iter->first,0));
 				iter++;
 			}
-			// printf("%d\n", weight); 
-			if(weight>=0.5*total_weight)
-				break;
-			queue.pop_front();
-			for(unsigned int i = 0; i< get<1>(graph.adjacency_list[s]).size();i++)
+			srand (time(NULL));
+			int randomno = (rand()*id )% graph.adjacency_list.size();
+			iter = graph.adjacency_list.begin();
+			while(iter != graph.adjacency_list.end())
 			{
-				if(labels[get<1>(graph.adjacency_list[s])[i].n2]==0)
-					queue.push_back(get<1>(graph.adjacency_list[s])[i].n2);
+				if(temp < randomno)
+					temp++;
+				else
+				{
+					startNode = iter->second;
+					break;
+				}
+				iter++;
+			}
+			// printf("start = %d\n",get<0>(startNode).id);
+			// startNode = get<0>(graph.adjacency_list[id])
+
+			list<int> queue;
+			queue.push_back(get<0>(startNode).id);
+			labels[get<0>(startNode).id] = 1;
+			
+			while(!queue.empty())
+			{
+				//printf("%d\n", weight);
+				int s = queue.front();
+				labels[s] = 1;
+				iter = graph.adjacency_list.begin();
+				weight = 0;
+				while(iter != graph.adjacency_list.end())
+				{
+					if(labels[get<0>(iter->second).id]==1)
+						weight += get<0>(iter->second).weight;
+					iter++;
+				}
+				// printf("%d\n", weight); 
+				if(weight>=0.5*total_weight)
+					break;
+				queue.pop_front();
+				for(unsigned int i = 0; i< get<1>(graph.adjacency_list[s]).size();i++)
+				{
+					if(labels[get<1>(graph.adjacency_list[s])[i].n2]==0)
+						queue.push_back(get<1>(graph.adjacency_list[s])[i].n2);
+				}
 			}
 		}
+		while(weight<0.45*weight);
+
 
 		parts.insert(pair <int,map<int,int> >(id,labels));
 		mincuts.insert(pair <int,int>(id,EdgeCut(labels,graph)));
@@ -183,6 +180,7 @@ map<int, int> Bipartition(Graph graph,int num_threads)
 		}
 		itr++;
 	}
+
 	return parts[minid];
 }
 	// {
@@ -402,7 +400,8 @@ Graph FindMatching(Graph graph,int id,int chunk_size, int level_coarsening, int 
 		for (int j : pos)
 		{
 			// Check whether node is inside the chunk or not
-			if(((get<1>(iter->second))[j]).n2 <= (id+1)*chunk_size && (get<1>(iter->second))[j].n2 > (id)*chunk_size)
+			// if(((get<1>(iter->second))[j]).n2 <= (id+1)*chunk_size && (get<1>(iter->second))[j].n2 > (id)*chunk_size)
+			if(graph.NodeExists(((get<1>(iter->second))[j]).n2))
 			{
 				if(get<0>(iter->second).matched==0)
 				{		
@@ -454,9 +453,8 @@ Graph FindMatching(Graph graph,int id,int chunk_size, int level_coarsening, int 
 }
 
 
-map<int, int> Partition(Graph& input, int num_edges, int num_threads)
+map<int, int> Partition(Graph& input, int num_threads, int k)
 {
-
 	vector<Graph> breaks;
 	map<int, vector<Graph> > coarse_graphs;	//[proc][k_level]
 	map<int, Graph> union_coarse_graphs;	//[k_level]
@@ -480,17 +478,28 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 
 		if(id < num_threads-1)
 		{ 
-			for(int i=id*chunk_size;i<(id+1)*chunk_size;i++)
+			map<int,  tuple<Node,vector <Edge> > > :: iterator iter = input.adjacency_list.begin();
+			for(int i = 0; i< (id) * chunk_size; i++)
 			{
-				breaks[id].createAdjacencyList(i+1,get<1>(input.adjacency_list[i+1]));
+				iter++;
+			}
+			for(int i=id*chunk_size;i<(id+1)*chunk_size; i++)
+			{
+				breaks[id].createAdjacencyList(iter->first, get<1>(iter->second));
+				iter++;
 			}
 		}
 		else
 		{
+			map<int,  tuple<Node,vector <Edge> > > :: iterator iter = input.adjacency_list.begin();
+			for(int i = 0; i< (id) * chunk_size; i++)
+			{
+				iter++;
+			}
 			for (unsigned int i = id*chunk_size; i < input.adjacency_list.size(); ++i)
 			{
-				breaks[id].createAdjacencyList(i+1,get<1>(input.adjacency_list[i+1]));
-			}
+				breaks[id].createAdjacencyList(iter->first, get<1>(iter->second));
+				iter++;			}
 		}
 		vector<Graph> coarse_p;
 		coarse_p.push_back(breaks[id]);
@@ -500,11 +509,7 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 		 	coarse_p[0] = (FindMatching(coarse_p[0], id, chunk_size, k_level, debug));
 		 	k_level++;
 		 	#pragma omp barrier
-		 	printf("Level = %d\n", k_level);
-		 	#pragma omp single
-		 	{
-
-		 	}
+		 	// printf("Level = %d\n", k_level);
 		}
 		// TODO: Set a stopping condition which is consistent with all the threads
 		
@@ -540,22 +545,83 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 		coarse_graphs[0][0].adjacency_list.insert(coarse_graphs[x][0].adjacency_list.begin(), coarse_graphs[x][0].adjacency_list.end());
 	}
 	// printf("Union find\n");
+	// printf("Partition k = %d\n", k);
+	// input.printGraph();
 	union_coarse_graphs.insert(pair <int, Graph> (0, updateEdges(coarse_graphs[0][0], 0, 0, 0)));
-	coarse_graphs[0][0].printGraph();
-	printf("Number of nodes = %d\n", union_coarse_graphs[0].numNodes());
+	// printf("Number of nodes = %d\n", union_coarse_graphs[0].numNodes());
 	
-	double start_time = omp_get_wtime();
-	map<int, int> parts = Uncoarsen(coarse_graphs[0][0], Bipartition(union_coarse_graphs[0],num_threads));
-	double time_taken = omp_get_wtime() - start_time;
-	cout << "\nTime taken (Bipartition) = " << time_taken << endl;
+	// double start_time = omp_get_wtime();
 	
-	for (int i = 1; i <= (int)(parts.size()); i++)
+	map <int,int> bipart = Bipartition(union_coarse_graphs[0],num_threads);
+	// // union_coarse_graphs[0].printGraph();
+	// // printf("biparts\n");
+	// map<int,int> :: iterator itere = bipart.begin();
+	// while(itere!=bipart.end())
+	// {
+	// 	printf("%d -> %d\n",itere->first, itere->second);
+	// 	itere++;
+	// }
+
+	map<int, int> parts = Uncoarsen(coarse_graphs[0][0], bipart);
+	// double time_taken = omp_get_wtime() - start_time;
+	// cout << "\nTime taken (Bipartition) = " << time_taken << endl;
+	map<int,int> :: iterator itert = parts.begin();
+	// while(itert!=parts.end())
+	// {
+	// 	printf("%d -> %d\n",itert->first, itert->second);
+	// 	itert++;
+	// }
+	// cout<<"mincut="<<EdgeCut(parts,input) << endl;
+	
+	if(k<=2)
 	{
-		cout << i << ": " << parts[i] << "\n";
+		// map<int,int> :: iterator iter = parts.begin();
+		// printf("K = %d\n", k);
+		// while(iter!=parts.end())
+		// {
+		// 	printf("%d -> %d\n",iter->first, iter->second);
+		// 	iter++;
+		// }
+		return parts;
 	}
-	cout<<"mincut="<<EdgeCut(parts,coarse_graphs[0][0]) << endl;
 	vector<Graph> div = divideGraph(input, parts);
+
+	map<int,int> a = Partition(div[0],num_threads,k/2);
+	map<int,int> b = Partition(div[1],num_threads,k/2);
 	
+	// div[0].printGraph();
+	// div[1].printGraph();
+	
+	map<int,int> :: iterator itera = a.begin();
+	// printf("a = \n");
+	
+	while(itera!=a.end())
+	{
+		// printf("%d ",itera->second);
+		itera->second *= 2;
+		itera->second += 1;
+		itera++;
+	}
+	itera = b.begin();
+	// printf("b = \n");
+	while(itera!=b.end())
+	{
+		// printf("%d ",itera->second);
+		itera->second *= 2;
+		itera++;
+	}
+
+	a.insert(b.begin(),b.end());
+	
+	// itera = a.begin();
+	// // printf("final list K = %d\n", k);
+	// while(itera!=a.end())
+	// {
+	// 	printf("%d -> %d\n",itera->first, itera->second);
+	// 	itera++;
+	// }
+	// printf("\n");
+	return a;
 	// map<int,  std::vector<int>> :: iterator FCiter = Food_Chain.begin();
 	// while(FCiter != Food_Chain.end())
 	// {
@@ -568,23 +634,5 @@ map<int, int> Partition(Graph& input, int num_edges, int num_threads)
 	// 	FCiter++;
 	// }
 	// Project(parts,input.adjacency_list.size()); // vomit recursive till rhs is 0
-	return parts;
-}
-
-void print_vec(vector<int> arr, int size)
-{
-	printf("size = %d\n", size);
-	printf("\n[ ");
-	for (int i = 0; i < size; i++)
-		printf("%d (%d) , ", arr[i], i);
-	printf("%d (%d)]\n", arr[size - 1], (size - 1));
-}
-
-void print_2d_vec(vector<vector<int> > arr, int size)
-{
-	printf("2d size = %d\n", size);
-	printf("\n[ ");
-	for (int i = 0; i < size; i++)
-		print_vec(arr[i], arr[i].size());
-	printf("]\n");
+	// return parts;
 }
