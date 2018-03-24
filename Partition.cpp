@@ -84,9 +84,11 @@ vector<Graph> divideGraph(Graph graph, map<int, int> labels)
 	return out;
 }
 
-map<int, int> Bipartition(Graph graph,int num_threads)
+map<int, int> Bipartition(Graph& graph,int num_threads)
 {
-	map<int,  tuple<Node,vector <Edge> > > :: iterator iter = graph.adjacency_list.begin();
+	printf("Bipartition called = %d\n", graph.numNodes());
+	// graph.printGraph();
+	map<int,  tuple<Node,vector <Edge>>> :: iterator iter = graph.adjacency_list.begin();
 	int total_weight = 0;
 	while(iter != graph.adjacency_list.end())
 	{
@@ -95,16 +97,20 @@ map<int, int> Bipartition(Graph graph,int num_threads)
 	}
 	// cout<<"total="<<total_weight<<endl;
 
-	map<int,int> mincuts;
-	map<int, map<int,int> > parts;
+	map<int,int> mincuts, intra_mincuts;
+	map<int, map<int,int> > parts, intra_parts;
+	srand (time(NULL));
 
-	#pragma omp parallel num_threads(num_threads)
+	#pragma omp parallel num_threads(1)
 	{
 		map<int, int> labels;
 		int weight = 0;
 		int id = omp_get_thread_num();
+		int num_tries = 0;
+		for (int z = 0; z < 1; z++){	
 		do
 		{
+			num_tries++;
 			weight = 0;
 			tuple<Node,vector <Edge>> startNode;
 			iter = graph.adjacency_list.begin();	
@@ -116,8 +122,8 @@ map<int, int> Bipartition(Graph graph,int num_threads)
 				labels.insert(pair < int, int> (iter->first,0));
 				iter++;
 			}
-			srand (time(NULL));
-			int randomno = (rand()*id )% graph.adjacency_list.size();
+			int randomno = (rand())% graph.adjacency_list.size();
+			// printf("rand = %d\n", randomno);
 			iter = graph.adjacency_list.begin();
 			while(iter != graph.adjacency_list.end())
 			{
@@ -151,7 +157,7 @@ map<int, int> Bipartition(Graph graph,int num_threads)
 					iter++;
 				}
 				// printf("%d\n", weight); 
-				if(weight>=0.5*total_weight)
+				if(weight > 0.4*total_weight && weight < 0.6*total_weight)
 					break;
 				queue.pop_front();
 				for(unsigned int i = 0; i< get<1>(graph.adjacency_list[s]).size();i++)
@@ -161,11 +167,27 @@ map<int, int> Bipartition(Graph graph,int num_threads)
 				}
 			}
 		}
-		while(weight<0.45*weight);
+		while((weight < 0.4*total_weight || weight > 0.6*total_weight) && num_tries < 10);
+		num_tries = 0;
+		intra_parts.insert(pair <int,map<int,int> >(z,labels));
+		intra_mincuts.insert(pair <int,int>(id,EdgeCut(labels,graph)));
+		}
 
-
-		parts.insert(pair <int,map<int,int> >(id,labels));
-		mincuts.insert(pair <int,int>(id,EdgeCut(labels,graph)));
+		int min = mincuts[0];
+		int minid = 0;
+		map<int, int > :: iterator itr = intra_mincuts.begin();
+		while(itr != intra_mincuts.end())
+		{
+			// printf("%d\n",itr->first);
+			if(min >= itr->second)
+			{	
+				min = itr->second;
+				minid = itr->first;
+			}
+			itr++;
+		}
+		parts.insert(pair <int,map<int,int> >(id,intra_parts[minid]));
+		mincuts.insert(pair <int,int>(id,EdgeCut(intra_parts[minid],graph)));
 	}
 	int min = mincuts[0];
 	int minid = 0;
@@ -181,111 +203,120 @@ map<int, int> Bipartition(Graph graph,int num_threads)
 		itr++;
 	}
 
-	return parts[minid];
+	// Implement KL
+	//  Choose vertex with most gain and 
+	// return parts[minid];
+	
+	map<int, int> labels = parts[minid];
+	for (int ex = 0; ex < 50; ex++)
+	{
+		int mincut = EdgeCut(labels,graph);
+		printf("hella fine %d mincut = %d\n",ex, mincut);
+		map<int, int> :: iterator itr = labels.begin();
+		int big = 0;
+		map<int, int> gain;
+
+		while(itr != labels.end())
+		{
+			int t=0;
+			for(Edge neighbour_itr : get<1>(graph.adjacency_list[itr->first]))
+			{
+				if(itr->second == 1)
+				{
+					if(labels[neighbour_itr.n2]==0)
+						t += neighbour_itr.weight; // Calculate gain with external edge
+					else
+						t -= neighbour_itr.weight;	// Calculate gain with internal edge
+				}
+				else
+				{
+					if(labels[neighbour_itr.n2]==1)
+						t += neighbour_itr.weight;
+					else
+						t -= neighbour_itr.weight;	
+				}
+			}
+			gain.insert(pair <int, int> (itr->first, t));
+
+			if(itr->second == 1)
+				big+=get<0>(graph.adjacency_list[itr->first]).weight;
+			if(itr->second == 0)
+				big-=get<0>(graph.adjacency_list[itr->first]).weight;
+			itr++;
+		}
+
+		// Class 1 is the bigger partition
+		if(big>0)
+		{
+			int j=-1;
+			int maxi = 0;
+			for (unsigned int i = 0; i < gain.size(); ++i)
+			{
+				if(gain[i]>=maxi && labels[i]==1) //max gain in 0
+				{
+					maxi = gain[i];
+					j=i;
+				}
+			}
+			labels[j] = 0;
+			if(mincut < EdgeCut(labels,graph))
+				labels[j]=1; // Fuck go back!
+		}
+		else if(big<0)
+		{
+			int j=-1;
+			int maxi = 0;
+			for (unsigned int i = 0; i < gain.size(); ++i)
+			{
+				if(gain[i]>=maxi && labels[i]==1)
+				{
+					maxi = gain[i];
+					j=i;
+				}
+			}
+			labels[j] = 1;
+			if(mincut<EdgeCut(labels,graph))
+				labels[j]=0;
+		}
+		else
+		{
+			int j1=-1;
+			int maxi = 0;
+			for (unsigned int i = 0; i < gain.size(); ++i)
+			{
+				if(gain[i]>=maxi && labels[i]==1)
+				{
+					maxi = gain[i];
+					j1=i;
+				}
+			}
+			labels[j1] = 0;
+			
+			int j2=-1;
+			maxi = 0;
+			for (unsigned int i = 0; i < gain.size(); ++i)
+			{
+				if(gain[i]>=maxi && labels[i]==0)
+				{
+					maxi = gain[i];
+					j2=i;
+				}
+			}
+			labels[j2] = 1;
+			
+
+			if(mincut<EdgeCut(labels,graph))
+			{
+				labels[j1]=1;
+				labels[j2]=0;
+			}
+
+		}
+	}
+	return labels;
+	
+	// return parts[minid];
 }
-	// {
-	// 	printf("hell %d",ex);
-	// 	int mincut = EdgeCut(labels,graph);
-	// 	map<int, int> :: iterator itr = labels.begin();
-	// 	int big = 0;
-	// 	vector<int> gain(labels.size());
-
-	// 	while(itr != labels.end())
-	// 	{
-	// 		int t=0;
-	// 		for (int i = 0; i < get<1>(graph.adjacency_list[itr->first]).size(); ++i)
-	// 		{
-	// 			if(itr->second == 1)
-	// 			{
-	// 				if(labels[get<1>(graph.adjacency_list[itr->first])[i].n2]==0)
-	// 					t+=get<1>(graph.adjacency_list[itr->first])[i].weight;
-	// 				else
-	// 					t-=get<1>(graph.adjacency_list[itr->first])[i].weight;
-	// 			}
-	// 			else
-	// 			{
-	// 				if(labels[get<1>(graph.adjacency_list[itr->first])[i].n2]==1)
-	// 					t+=get<1>(graph.adjacency_list[itr->first])[i].weight;
-	// 				else
-	// 					t-=get<1>(graph.adjacency_list[itr->first])[i].weight;	
-	// 			}
-	// 		}
-	// 		gain[itr->first] = t;
-
-	// 		if(itr->second == 1)
-	// 			big+=get<0>(graph.adjacency_list[itr->first]).weight;
-	// 		if(itr->second == 0)
-	// 			big-=get<0>(graph.adjacency_list[itr->first]).weight;
-	// 		itr++;
-	// 	}
-
-	// 	if(big>0)
-	// 	{
-	// 		int j=-1;
-	// 		int maxi = 0;
-	// 		for (int i = 0; i < gain.size(); ++i)
-	// 		{
-	// 			if(gain[i]>=maxi && labels[i]==0)
-	// 			{
-	// 				maxi = gain[i];
-	// 				j=i;
-	// 			}
-	// 		}
-	// 		labels[j] = 0;
-	// 		if(mincut<EdgeCut(labels,graph))
-	// 			labels[j]=1;
-	// 	}
-	// 	else if(big<0)
-	// 	{
-	// 		int j=-1;
-	// 		int maxi = 0;
-	// 		for (int i = 0; i < gain.size(); ++i)
-	// 		{
-	// 			if(gain[i]>=maxi && labels[i]==1)
-	// 			{
-	// 				maxi = gain[i];
-	// 				j=i;
-	// 			}
-	// 		}
-	// 		labels[j] = 1;
-	// 		if(mincut<EdgeCut(labels,graph))
-	// 			labels[j]=0;
-	// 	}
-	// 	else
-	// 	{
-	// 		int j1=-1;
-	// 		int maxi = 0;
-	// 		for (int i = 0; i < gain.size(); ++i)
-	// 		{
-	// 			if(gain[i]>=maxi && labels[i]==1)
-	// 			{
-	// 				maxi = gain[i];
-	// 				j1=i;
-	// 			}
-	// 		}
-	// 		labels[j1] = 0;
-			
-	// 		int j2=-1;
-	// 		maxi = 0;
-	// 		for (int i = 0; i < gain.size(); ++i)
-	// 		{
-	// 			if(gain[i]>=maxi && labels[i]==0)
-	// 			{
-	// 				maxi = gain[i];
-	// 				j2=i;
-	// 			}
-	// 		}
-	// 		labels[j2] = 1;
-			
-
-	// 		if(mincut<EdgeCut(labels,graph))
-	// 		{
-	// 			labels[j1]=1;
-	// 			labels[j2]=0;
-	// 		}
-
-	// 	}
-	// }
 
 
 // mode = 1 , PARALLEL MODE store the old nodes
@@ -506,9 +537,15 @@ map<int, int> Partition(Graph& input, int num_threads, int k)
 		int k_level = 0; // level of coarsening each processor does
 		while(k_level < STOPPING_CONDITION)
 		{
+		 	if(coarse_p[0].numNodes() < 100)
+		 	{
+		 		k_level++;
+		 		continue;
+		 	}
 		 	coarse_p[0] = (FindMatching(coarse_p[0], id, chunk_size, k_level, debug));
 		 	k_level++;
 		 	#pragma omp barrier
+		 	
 		 	// printf("Level = %d\n", k_level);
 		}
 		// TODO: Set a stopping condition which is consistent with all the threads

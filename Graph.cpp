@@ -97,6 +97,7 @@ public:
 
 	int numNodes()
 	{
+		return adjacency_list.size();
 		map<int,  tuple<Node,vector <Edge> >> :: iterator iter = adjacency_list.begin();
 		int numNodes = 0;
 		while (iter != adjacency_list.end())

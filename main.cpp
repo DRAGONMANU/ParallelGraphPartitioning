@@ -18,7 +18,8 @@ using namespace std;
 extern map<int, int> Partition(Graph& input, int num_threads, int k);
 
 int main(int argc, char* argv[]) {
-	int num_threads = omp_get_num_procs();
+	// int num_threads = omp_get_num_procs();
+	int num_threads = 2;
 	
 	if(argc!=4)
 	{
