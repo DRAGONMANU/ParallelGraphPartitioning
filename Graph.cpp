@@ -207,11 +207,11 @@ public:
 			{
 				printf(" (C - %d)", get<0>(itr->second).consumer);
 			}
-			printf("\t");
-			for (unsigned int j = 0; j < get<1>(itr->second).size(); j++ )
-			{
-				( get<1>(itr->second)[j] ).printEdge();
-			}
+			// printf("\t");
+			// for (unsigned int j = 0; j < get<1>(itr->second).size(); j++ )
+			// {
+			// 	( get<1>(itr->second)[j] ).printEdge();
+			// }
 			printf("\n");
 			itr++;
 		}

@@ -101,7 +101,7 @@ map<int, int> Bipartition(Graph& graph,int num_threads)
 	map<int, map<int,int> > parts, intra_parts;
 	srand (time(NULL));
 
-	#pragma omp parallel num_threads(1)
+	#pragma omp parallel num_threads(num_threads)
 	{
 		map<int, int> labels;
 		int weight = 0;
@@ -208,10 +208,10 @@ map<int, int> Bipartition(Graph& graph,int num_threads)
 	// return parts[minid];
 	
 	map<int, int> labels = parts[minid];
-	for (int ex = 0; ex < 50; ex++)
+	for (int ex = 0; ex < 2000; ex++)
 	{
 		int mincut = EdgeCut(labels,graph);
-		printf("hella fine %d mincut = %d\n",ex, mincut);
+		// if (ex % 10 == 0)printf("hella fine %d mincut = %d\n",ex, mincut);
 		map<int, int> :: iterator itr = labels.begin();
 		int big = 0;
 		map<int, int> gain;
@@ -244,19 +244,22 @@ map<int, int> Bipartition(Graph& graph,int num_threads)
 				big-=get<0>(graph.adjacency_list[itr->first]).weight;
 			itr++;
 		}
-
+		// printf("big \n");
+		printf("big = %d\n", big);
 		// Class 1 is the bigger partition
 		if(big>0)
 		{
 			int j=-1;
 			int maxi = 0;
-			for (unsigned int i = 0; i < gain.size(); ++i)
+			map<int, int> :: iterator gain_itr = gain.begin();
+			while(gain_itr!= gain.end())
 			{
-				if(gain[i]>=maxi && labels[i]==1) //max gain in 0
+				if(gain_itr->second >= maxi && labels[gain_itr->first]==1) //max gain in 0
 				{
-					maxi = gain[i];
-					j=i;
+					maxi = gain_itr->second;
+					j = gain_itr->first;
 				}
+				gain_itr++;
 			}
 			labels[j] = 0;
 			if(mincut < EdgeCut(labels,graph))
@@ -266,44 +269,49 @@ map<int, int> Bipartition(Graph& graph,int num_threads)
 		{
 			int j=-1;
 			int maxi = 0;
-			for (unsigned int i = 0; i < gain.size(); ++i)
+			map<int, int> :: iterator gain_itr = gain.begin();
+			while(gain_itr!= gain.end())
 			{
-				if(gain[i]>=maxi && labels[i]==1)
+				if(gain_itr->second >= maxi && labels[gain_itr->first]==0) //max gain in 0
 				{
-					maxi = gain[i];
-					j=i;
+					maxi = gain_itr->second;
+					j = gain_itr->first;
 				}
+				gain_itr++;
 			}
 			labels[j] = 1;
-			if(mincut<EdgeCut(labels,graph))
+			if(mincut < EdgeCut(labels,graph))
 				labels[j]=0;
 		}
 		else
 		{
 			int j1=-1;
 			int maxi = 0;
-			for (unsigned int i = 0; i < gain.size(); ++i)
+			map<int, int> :: iterator gain_itr = gain.begin();
+			while(gain_itr!= gain.end())
 			{
-				if(gain[i]>=maxi && labels[i]==1)
+				if(gain_itr->second >= maxi && labels[gain_itr->first]==1) //max gain in 0
 				{
-					maxi = gain[i];
-					j1=i;
+					maxi = gain_itr->second;
+					j1 = gain_itr->first;
 				}
+				gain_itr++;
 			}
 			labels[j1] = 0;
 			
 			int j2=-1;
 			maxi = 0;
-			for (unsigned int i = 0; i < gain.size(); ++i)
+			gain_itr = gain.begin();
+			while(gain_itr!= gain.end())
 			{
-				if(gain[i]>=maxi && labels[i]==0)
+				if(gain_itr->second >= maxi && labels[gain_itr->first]==0) //max gain in 0
 				{
-					maxi = gain[i];
-					j2=i;
+					maxi = gain_itr->second;
+					j2 = gain_itr->first;
 				}
+				gain_itr++;
 			}
 			labels[j2] = 1;
-			
 
 			if(mincut<EdgeCut(labels,graph))
 			{
