@@ -13,7 +13,7 @@
 using namespace std;;
 void print_2d_vec(vector<vector<int>> arr, int size);
 void print_vec(vector<int> arr, int size);
-
+int NUM_NODES;
 int STOPPING_CONDITION = 10;
 
 map <int, vector<int>> Food_Chain;
@@ -208,119 +208,130 @@ map<int, int> Bipartition(Graph& graph,int num_threads)
 	// return parts[minid];
 	
 	map<int, int> labels = parts[minid];
-	for (int ex = 0; ex < 2000; ex++)
-	{
-		int mincut = EdgeCut(labels,graph);
-		// if (ex % 10 == 0)printf("hella fine %d mincut = %d\n",ex, mincut);
-		map<int, int> :: iterator itr = labels.begin();
-		int big = 0;
-		map<int, int> gain;
-
-		while(itr != labels.end())
+	for (int retry = 0; retry < 3; retry++)
+	{	
+		int big;
+		for (int ex = 0; ex < 100; ex++)
 		{
-			int t=0;
-			for(Edge neighbour_itr : get<1>(graph.adjacency_list[itr->first]))
+			int mincut = EdgeCut(labels,graph);
+			// if (ex % 10 == 0)printf("hella fine %d mincut = %d\n",ex, mincut);
+			map<int, int> :: iterator itr = labels.begin();
+			big = 0;
+			map<int, int> gain;
+
+			while(itr != labels.end())
 			{
+				int t=0;
+				for(Edge neighbour_itr : get<1>(graph.adjacency_list[itr->first]))
+				{
+					if(itr->second == 1)
+					{
+						if(labels[neighbour_itr.n2]==0)
+							t += neighbour_itr.weight; // Calculate gain with external edge
+						else
+							t -= neighbour_itr.weight;	// Calculate gain with internal edge
+					}
+					else
+					{
+						if(labels[neighbour_itr.n2]==1)
+							t += neighbour_itr.weight;
+						else
+							t -= neighbour_itr.weight;	
+					}
+				}
+				gain.insert(pair <int, int> (itr->first, t));
+
 				if(itr->second == 1)
-				{
-					if(labels[neighbour_itr.n2]==0)
-						t += neighbour_itr.weight; // Calculate gain with external edge
-					else
-						t -= neighbour_itr.weight;	// Calculate gain with internal edge
-				}
-				else
-				{
-					if(labels[neighbour_itr.n2]==1)
-						t += neighbour_itr.weight;
-					else
-						t -= neighbour_itr.weight;	
-				}
+					big+=get<0>(graph.adjacency_list[itr->first]).weight;
+				if(itr->second == 0)
+					big-=get<0>(graph.adjacency_list[itr->first]).weight;
+				itr++;
 			}
-			gain.insert(pair <int, int> (itr->first, t));
+			// printf("big \n");
+			// printf("big = %d\n", big);
+			// Class 1 is the bigger partition
+			if(big>0)
+			{
+				int j=-1;
+				int maxi = 0;
+				map<int, int> :: iterator gain_itr = gain.begin();
+				while(gain_itr!= gain.end())
+				{
+					if(gain_itr->second >= maxi && labels[gain_itr->first]==1) //max gain in 0
+					{
+						maxi = gain_itr->second;
+						j = gain_itr->first;
+					}
+					gain_itr++;
+				}
+				labels[j] = 0;
+				if(mincut < EdgeCut(labels,graph))
+					labels[j]=1; // Fuck go back!
+			}
+			else if(big<0)
+			{
+				int j=-1;
+				int maxi = 0;
+				map<int, int> :: iterator gain_itr = gain.begin();
+				while(gain_itr!= gain.end())
+				{
+					if(gain_itr->second >= maxi && labels[gain_itr->first]==0  /*|| get<0>(graph.adjacency_list[itr->first]).weight > -2*big */ ) //max gain in 0
+					{
+						maxi = gain_itr->second;
+						j = gain_itr->first;
+					}
+					gain_itr++;
+				}
+				labels[j] = 1;
+				if(mincut < EdgeCut(labels,graph))
+					labels[j]=0;
+			}
+			else
+			{
+				int j1=-1;
+				int maxi = 0;
+				map<int, int> :: iterator gain_itr = gain.begin();
+				while(gain_itr!= gain.end())
+				{
+					if(gain_itr->second >= maxi && labels[gain_itr->first]==1) //max gain in 0
+					{
+						maxi = gain_itr->second;
+						j1 = gain_itr->first;
+					}
+					gain_itr++;
+				}
+				labels[j1] = 0;
+				
+				int j2=-1;
+				maxi = 0;
+				gain_itr = gain.begin();
+				while(gain_itr!= gain.end())
+				{
+					if(gain_itr->second >= maxi && labels[gain_itr->first]==0) //max gain in 0
+					{
+						maxi = gain_itr->second;
+						j2 = gain_itr->first;
+					}
+					gain_itr++;
+				}
+				labels[j2] = 1;
 
-			if(itr->second == 1)
-				big+=get<0>(graph.adjacency_list[itr->first]).weight;
-			if(itr->second == 0)
-				big-=get<0>(graph.adjacency_list[itr->first]).weight;
-			itr++;
-		}
-		// printf("big \n");
-		printf("big = %d\n", big);
-		// Class 1 is the bigger partition
-		if(big>0)
-		{
-			int j=-1;
-			int maxi = 0;
-			map<int, int> :: iterator gain_itr = gain.begin();
-			while(gain_itr!= gain.end())
-			{
-				if(gain_itr->second >= maxi && labels[gain_itr->first]==1) //max gain in 0
+				if(mincut<EdgeCut(labels,graph))
 				{
-					maxi = gain_itr->second;
-					j = gain_itr->first;
+					labels[j1]=1;
+					labels[j2]=0;
 				}
-				gain_itr++;
-			}
-			labels[j] = 0;
-			if(mincut < EdgeCut(labels,graph))
-				labels[j]=1; // Fuck go back!
-		}
-		else if(big<0)
-		{
-			int j=-1;
-			int maxi = 0;
-			map<int, int> :: iterator gain_itr = gain.begin();
-			while(gain_itr!= gain.end())
-			{
-				if(gain_itr->second >= maxi && labels[gain_itr->first]==0) //max gain in 0
-				{
-					maxi = gain_itr->second;
-					j = gain_itr->first;
-				}
-				gain_itr++;
-			}
-			labels[j] = 1;
-			if(mincut < EdgeCut(labels,graph))
-				labels[j]=0;
-		}
-		else
-		{
-			int j1=-1;
-			int maxi = 0;
-			map<int, int> :: iterator gain_itr = gain.begin();
-			while(gain_itr!= gain.end())
-			{
-				if(gain_itr->second >= maxi && labels[gain_itr->first]==1) //max gain in 0
-				{
-					maxi = gain_itr->second;
-					j1 = gain_itr->first;
-				}
-				gain_itr++;
-			}
-			labels[j1] = 0;
-			
-			int j2=-1;
-			maxi = 0;
-			gain_itr = gain.begin();
-			while(gain_itr!= gain.end())
-			{
-				if(gain_itr->second >= maxi && labels[gain_itr->first]==0) //max gain in 0
-				{
-					maxi = gain_itr->second;
-					j2 = gain_itr->first;
-				}
-				gain_itr++;
-			}
-			labels[j2] = 1;
 
-			if(mincut<EdgeCut(labels,graph))
-			{
-				labels[j1]=1;
-				labels[j2]=0;
 			}
-
 		}
+		// Check equal partition condition
+		if (big < 0.05 * NUM_NODES)
+		{
+			break;
+		}	
 	}
+
+
 	return labels;
 	
 	// return parts[minid];
@@ -492,12 +503,12 @@ Graph FindMatching(Graph graph,int id,int chunk_size, int level_coarsening, int 
 }
 
 
-map<int, int> Partition(Graph& input, int num_threads, int k)
+map<int, int> Partition(Graph& input, int num_threads, int k, int num_nodes)
 {
 	vector<Graph> breaks;
 	map<int, vector<Graph> > coarse_graphs;	//[proc][k_level]
 	map<int, Graph> union_coarse_graphs;	//[k_level]
-
+	NUM_NODES = num_nodes;
 	for (int i = 0; i < num_threads; ++i)
 	{
 		breaks.push_back(*new Graph());
@@ -596,7 +607,7 @@ map<int, int> Partition(Graph& input, int num_threads, int k)
 	// printf("Number of nodes = %d\n", union_coarse_graphs[0].numNodes());
 	
 	// double start_time = omp_get_wtime();
-	
+	printf("size of union = %d\n", union_coarse_graphs[0].numNodes());
 	map <int,int> bipart = Bipartition(union_coarse_graphs[0],num_threads);
 	// // union_coarse_graphs[0].printGraph();
 	// // printf("biparts\n");
@@ -631,8 +642,8 @@ map<int, int> Partition(Graph& input, int num_threads, int k)
 	}
 	vector<Graph> div = divideGraph(input, parts);
 
-	map<int,int> a = Partition(div[0],num_threads,k/2);
-	map<int,int> b = Partition(div[1],num_threads,k/2);
+	map<int,int> a = Partition(div[0],num_threads,k/2, NUM_NODES);
+	map<int,int> b = Partition(div[1],num_threads,k/2, NUM_NODES);
 	
 	// div[0].printGraph();
 	// div[1].printGraph();

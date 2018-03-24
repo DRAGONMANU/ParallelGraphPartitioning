@@ -19,7 +19,7 @@ extern map<int, int> Partition(Graph& input, int num_threads, int k);
 
 int main(int argc, char* argv[]) {
 	// int num_threads = omp_get_num_procs();
-	int num_threads = 2;
+	int num_threads = 4;
 	
 	if(argc!=4)
 	{
@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
 	double start_time = omp_get_wtime();
 	int k =atoi(argv[3]);
 	// printf("input size = %d\n", input.size());
-	map<int, int> parts = Partition(input_graph, num_threads,k);
+	map<int, int> parts = Partition(input_graph, num_threads,k, num_nodes);
 	double time_taken = omp_get_wtime() - start_time;
 	// Printing stats and results
 	cout << "\nTime taken = " << time_taken << endl;
