@@ -38,14 +38,15 @@ class Node
 	int matched;
 	map<int, Node*> food_chain;
 	int consumer;
-	vector<Edge> neighbours;
-	vector<Edge> external_edges;
+	// vector<Edge> neighbours;
+	// vector<Edge> external_edges;
 	
 	Node(){
 		id = -1;
 		weight = 1;
 		matched = 0;
 		consumer = -1;
+		// printf("--NEW NODE--\n");
 	}
 	Node(int id1) {
 		id = id1;
@@ -126,13 +127,13 @@ public:
 			//printf("ERROR Node does not exest x1 = %d\n", x1);
 			n1 = *(new Node(x1));
 		}
-		n1.neighbours = neighbours;
+		// n1.neighbours = neighbours;
 		adjacency_list.insert( pair < int, tuple<Node,vector <Edge> > > (n1.getId(),  make_tuple(n1, neighbours)) );
 	}
 
 	void createAdjacencyList2(Node& n1, vector<Edge> neighbours)
 	{
-		n1.neighbours = neighbours;
+		// n1.neighbours = neighbours;
 		adjacency_list.insert( pair < int, tuple<Node,vector <Edge> > > (n1.getId(),  make_tuple(n1, neighbours)) );
 	}
 

@@ -32,7 +32,7 @@ map <int, int> Uncoarsen(Graph graph, map <int, int> partial_label)
 	}
 	return partial_label;
 }
-int EdgeCut(map<int, int> labels,Graph graph)
+int EdgeCut(map<int, int> labels,Graph& graph)
 {
 	map<int, int> :: iterator itr = labels.begin();
 	int sum = 0;
@@ -47,6 +47,10 @@ int EdgeCut(map<int, int> labels,Graph graph)
 		}
 		itr++;
 	
+	}
+	if(sum == 0)
+	{
+		// graph.printGraph();
 	}
 	// printf("ones is %d\n",ones );
 	return sum / 2;
@@ -101,7 +105,7 @@ map<int, int> Bipartition(Graph& graph,int num_threads)
 	map<int, map<int,int> > parts, intra_parts;
 	srand (time(NULL));
 
-	#pragma omp parallel num_threads(num_threads)
+	#pragma omp parallel num_threads(1)
 	{
 		map<int, int> labels;
 		int weight = 0;
@@ -208,13 +212,29 @@ map<int, int> Bipartition(Graph& graph,int num_threads)
 	// return parts[minid];
 	
 	map<int, int> labels = parts[minid];
+	int counter1 = 0, counter2 = 0;
+	itr = labels.begin();
+	while(itr != labels.end())
+	{
+		if(itr->second == 1)
+		{
+			counter1++;
+		}
+		else
+		{
+			counter2++;
+		}
+		itr++;
+	}
+
+	printf("INitial KL wt1 = %d wt2 = %d\n", counter1, counter2);
+
 	for (int retry = 0; retry < 3; retry++)
 	{	
 		int big;
 		for (int ex = 0; ex < 100; ex++)
 		{
 			int mincut = EdgeCut(labels,graph);
-			// if (ex % 10 == 0)printf("hella fine %d mincut = %d\n",ex, mincut);
 			map<int, int> :: iterator itr = labels.begin();
 			big = 0;
 			map<int, int> gain;
@@ -247,8 +267,11 @@ map<int, int> Bipartition(Graph& graph,int num_threads)
 					big-=get<0>(graph.adjacency_list[itr->first]).weight;
 				itr++;
 			}
-			// printf("big \n");
-			// printf("big = %d\n", big);
+			if (ex % 20 == 0)
+			{
+				printf("hella fine %d mincut = %d ",ex, mincut);
+				printf("big = %d\n", big);
+			}
 			// Class 1 is the bigger partition
 			if(big>0)
 			{
@@ -325,7 +348,7 @@ map<int, int> Bipartition(Graph& graph,int num_threads)
 			}
 		}
 		// Check equal partition condition
-		if (big < 0.05 * NUM_NODES)
+		if (big < 0.05 * NUM_NODES && big > -0.05 * NUM_NODES)
 		{
 			break;
 		}	
@@ -378,8 +401,12 @@ Graph updateEdges(Graph& graph, int level_coarsening, int mode, int debug)
 			continue;
 		}
 
-		Node new_n = *(new Node(old_n.id));
-		new_n.weight = old_n.weight;
+		// Node new_n = *(new Node(old_n.id));
+		// new_n.weight = old_n.weight;
+		Node new_n = old_n;
+		new_n.food_chain = *(new map<int, Node*>);
+		new_n.matched = 0;
+		new_n.consumer = -1;
 		new_graph.createAdjacencyList2(new_n, new_neighbours);
 
 
@@ -481,7 +508,7 @@ Graph FindMatching(Graph graph,int id,int chunk_size, int level_coarsening, int 
 			}
 			else
 			{
-				get<0>(iter->second).external_edges.push_back(*new Edge((get<1>(iter->second))[j].n2,1));
+				// get<0>(iter->second).external_edges.push_back(*new Edge((get<1>(iter->second))[j].n2,1));
 				// printf("ext %d - %d\n", get<0>(iter->second).id, get<1>(iter->second)[j].n2);
 			}
 		}
@@ -509,6 +536,7 @@ map<int, int> Partition(Graph& input, int num_threads, int k, int num_nodes)
 	map<int, vector<Graph> > coarse_graphs;	//[proc][k_level]
 	map<int, Graph> union_coarse_graphs;	//[k_level]
 	NUM_NODES = num_nodes;
+	printf("Partition k = %d Num nodes = %d\n", k, input.numNodes());
 	for (int i = 0; i < num_threads; ++i)
 	{
 		breaks.push_back(*new Graph());
@@ -556,12 +584,10 @@ map<int, int> Partition(Graph& input, int num_threads, int k, int num_nodes)
 		int k_level = 0; // level of coarsening each processor does
 		while(k_level < STOPPING_CONDITION)
 		{
-		 	if(coarse_p[0].numNodes() < 100)
+		 	if(coarse_p[0].numNodes() > 200)
 		 	{
-		 		k_level++;
-		 		continue;
+		 		coarse_p[0] = (FindMatching(coarse_p[0], id, chunk_size, k_level, debug));
 		 	}
-		 	coarse_p[0] = (FindMatching(coarse_p[0], id, chunk_size, k_level, debug));
 		 	k_level++;
 		 	#pragma omp barrier
 		 	
